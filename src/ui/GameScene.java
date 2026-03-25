@@ -335,10 +335,13 @@ public class GameScene implements NetworkMessageListener {
             AttackOutcome outcome = enemyBoard.receiveAttack(x, y);
             enemyAttacked[y][x] = true;
             enemyHits[y][x] = outcome.getResult() == AttackResult.HIT;
+            markEnemyClearedWater(outcome);
             clearSelectedTarget();
             refreshEnemyGrid();
             if (outcome.getResult() == AttackResult.HIT) {
-                statusLabel.setText("Hit at " + toGridRef(x, y) + "!");
+                statusLabel.setText(outcome.isSunkShip()
+                    ? "You sunk the enemy " + outcome.getShipType().name().toLowerCase() + "!"
+                    : "Hit at " + toGridRef(x, y) + "!");
                 audioManager.playExplosion();
             } else {
                 statusLabel.setText("Miss at " + toGridRef(x, y) + ".");
@@ -370,6 +373,7 @@ public class GameScene implements NetworkMessageListener {
             AttackOutcome outcome = playerBoard.receiveAttack(shot.x(), shot.y());
             boolean hit = outcome.getResult() == AttackResult.HIT;
             ai.handleShotResult(shot, hit);
+            ai.markUnavailable(outcome.getClearedCoordinates());
             refreshPlayerGrid();
             updateSummaries();
             if (hit) {
@@ -380,7 +384,9 @@ public class GameScene implements NetworkMessageListener {
                 return;
             }
             myTurn = true;
-            statusLabel.setText("AI fired at " + toGridRef(shot.x(), shot.y()) + ". Your turn.");
+            statusLabel.setText(outcome.isSunkShip()
+                ? "AI sunk your " + outcome.getShipType().name().toLowerCase() + ". Your turn."
+                : "AI fired at " + toGridRef(shot.x(), shot.y()) + ". Your turn.");
             updateEnemyInteractivity();
         });
     }
@@ -545,6 +551,13 @@ public class GameScene implements NetworkMessageListener {
         }
         if (enemyButtons[0][0] != null) {
             refreshEnemyGrid();
+        }
+    }
+
+    private void markEnemyClearedWater(AttackOutcome outcome) {
+        for (Coordinate coordinate : outcome.getClearedCoordinates()) {
+            enemyAttacked[coordinate.y()][coordinate.x()] = true;
+            enemyHits[coordinate.y()][coordinate.x()] = false;
         }
     }
 }

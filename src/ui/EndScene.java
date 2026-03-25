@@ -42,11 +42,20 @@ public class EndScene {
         message.setTextAlignment(TextAlignment.CENTER);
         message.setAlignment(Pos.CENTER);
 
+        Runnable mainMenuAction = () -> {
+            audioManager.stopEndMusic();
+            menuAction.run();
+        };
+        Runnable closeAction = () -> {
+            audioManager.stopEndMusic();
+            exitAction.run();
+        };
+
         VBox content = new VBox(18,
             title,
             message,
-            UiFactory.createMenuButton("Main Menu", audioManager, menuAction),
-            UiFactory.createMenuButton("Exit", audioManager, exitAction)
+            UiFactory.createMenuButton("Main Menu", audioManager, mainMenuAction),
+            UiFactory.createMenuButton("Exit", audioManager, closeAction)
         );
         content.setAlignment(Pos.CENTER);
         content.setPadding(new Insets(20, 0, 40, 0));

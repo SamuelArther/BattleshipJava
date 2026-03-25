@@ -26,7 +26,10 @@ public class AudioManager {
 
     private final Map<SoundEffect, Media> soundEffects = new EnumMap<>(SoundEffect.class);
     private Media menuMedia;
+    private Media victoryMedia;
+    private Media lossMedia;
     private MediaPlayer menuPlayer;
+    private MediaPlayer endPlayer;
     private MediaPlayer firePlayer;
     private MediaPlayer explosionPlayer;
     private MediaPlayer selectPlayer;
@@ -37,6 +40,8 @@ public class AudioManager {
             soundEffects.put(soundEffect, loadMedia(soundEffect.resourcePath));
         }
         menuMedia = loadMedia("/audio/menu.mp3");
+        victoryMedia = loadMedia("/music/victory.mp3");
+        lossMedia = loadMedia("/music/loss.mp3");
     }
 
     public void playFire() {
@@ -52,6 +57,7 @@ public class AudioManager {
     }
 
     public void playMenuMusic() {
+        stopEndMusic();
         if (!audioAvailable || menuMedia == null) {
             return;
         }
@@ -94,6 +100,21 @@ public class AudioManager {
         }
     }
 
+    public void playVictoryMusic() {
+        playEndMusic(victoryMedia);
+    }
+
+    public void playLossMusic() {
+        playEndMusic(lossMedia);
+    }
+
+    public void stopEndMusic() {
+        if (endPlayer != null) {
+            disposePlayer(endPlayer);
+            endPlayer = null;
+        }
+    }
+
     public void stopFire() {
         disposePlayer(firePlayer);
         firePlayer = null;
@@ -101,6 +122,7 @@ public class AudioManager {
 
     public void dispose() {
         stopMenuMusic();
+        stopEndMusic();
         disposePlayer(firePlayer);
         disposePlayer(explosionPlayer);
         disposePlayer(selectPlayer);
@@ -161,6 +183,38 @@ public class AudioManager {
         } catch (RuntimeException exception) {
             audioAvailable = false;
             return existingPlayer;
+        }
+    }
+
+    private void playEndMusic(Media media) {
+        stopMenuMusic();
+        stopEndMusic();
+        if (!audioAvailable || media == null) {
+            return;
+        }
+        try {
+            endPlayer = new MediaPlayer(media);
+            endPlayer.setVolume(0.65);
+            endPlayer.setOnEndOfMedia(() -> {
+                try {
+                    endPlayer.stop();
+                } catch (RuntimeException ignored) {
+                }
+            });
+            endPlayer.setOnError(() -> {
+                audioAvailable = false;
+                disposePlayer(endPlayer);
+                endPlayer = null;
+            });
+            endPlayer.setOnReady(() -> {
+                try {
+                    endPlayer.play();
+                } catch (RuntimeException ignored) {
+                }
+            });
+        } catch (RuntimeException exception) {
+            audioAvailable = false;
+            endPlayer = null;
         }
     }
 

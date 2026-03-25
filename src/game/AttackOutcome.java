@@ -1,16 +1,20 @@
 package game;
 
+import java.util.List;
+
 public class AttackOutcome {
     private final AttackResult result;
     private final boolean sunkShip;
     private final boolean gameOver;
     private final ShipType shipType;
+    private final List<Coordinate> clearedCoordinates;
 
-    public AttackOutcome(AttackResult result, boolean sunkShip, boolean gameOver, ShipType shipType) {
+    public AttackOutcome(AttackResult result, boolean sunkShip, boolean gameOver, ShipType shipType, List<Coordinate> clearedCoordinates) {
         this.result = result;
         this.sunkShip = sunkShip;
         this.gameOver = gameOver;
         this.shipType = shipType;
+        this.clearedCoordinates = List.copyOf(clearedCoordinates);
     }
 
     public AttackResult getResult() {
@@ -27,5 +31,9 @@ public class AttackOutcome {
 
     public ShipType getShipType() {
         return shipType;
+    }
+
+    public List<Coordinate> getClearedCoordinates() {
+        return clearedCoordinates;
     }
 }

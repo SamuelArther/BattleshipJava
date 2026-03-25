@@ -6,6 +6,7 @@ import game.Coordinate;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.Random;
@@ -59,6 +60,12 @@ public class BattleshipAI {
         addTarget(coordinate.x() - 1, coordinate.y());
         addTarget(coordinate.x(), coordinate.y() + 1);
         addTarget(coordinate.x(), coordinate.y() - 1);
+    }
+
+    public void markUnavailable(Collection<Coordinate> coordinates) {
+        for (Coordinate coordinate : coordinates) {
+            attemptedShots[coordinate.y()][coordinate.x()] = true;
+        }
     }
 
     private void addTarget(int x, int y) {

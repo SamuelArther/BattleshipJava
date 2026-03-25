@@ -3,8 +3,10 @@ package game;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 public class Board {
     public static final int SIZE = 10;
@@ -103,24 +105,45 @@ public class Board {
 
     public AttackOutcome receiveAttack(int x, int y) {
         if (!isInBounds(x, y)) {
-            return new AttackOutcome(AttackResult.INVALID, false, false, null);
+            return new AttackOutcome(AttackResult.INVALID, false, false, null, List.of());
         }
 
         Tile tile = getTile(x, y);
         if (tile.isAttacked()) {
-            return new AttackOutcome(AttackResult.ALREADY_ATTACKED, false, false, tile.hasShip() ? tile.getShip().getType() : null);
+            return new AttackOutcome(AttackResult.ALREADY_ATTACKED, false, false, tile.hasShip() ? tile.getShip().getType() : null, List.of());
         }
 
         tile.setAttacked(true);
         if (!tile.hasShip()) {
-            return new AttackOutcome(AttackResult.MISS, false, false, null);
+            return new AttackOutcome(AttackResult.MISS, false, false, null, List.of());
         }
 
         Ship ship = tile.getShip();
         ship.registerHit(new Coordinate(x, y));
         boolean sunk = ship.isSunk();
         boolean gameOver = allShipsSunk();
-        return new AttackOutcome(AttackResult.HIT, sunk, gameOver, ship.getType());
+        List<Coordinate> clearedCoordinates = sunk ? clearSurroundingWater(ship) : List.of();
+        return new AttackOutcome(AttackResult.HIT, sunk, gameOver, ship.getType(), clearedCoordinates);
+    }
+
+    private List<Coordinate> clearSurroundingWater(Ship ship) {
+        Set<Coordinate> clearedCoordinates = new LinkedHashSet<>();
+        for (Coordinate coordinate : ship.getCoordinates()) {
+            for (int checkY = coordinate.y() - 1; checkY <= coordinate.y() + 1; checkY++) {
+                for (int checkX = coordinate.x() - 1; checkX <= coordinate.x() + 1; checkX++) {
+                    if (!isInBounds(checkX, checkY)) {
+                        continue;
+                    }
+                    Tile surroundingTile = getTile(checkX, checkY);
+                    if (surroundingTile.hasShip() || surroundingTile.isAttacked()) {
+                        continue;
+                    }
+                    surroundingTile.setAttacked(true);
+                    clearedCoordinates.add(new Coordinate(checkX, checkY));
+                }
+            }
+        }
+        return List.copyOf(clearedCoordinates);
     }
 
     private boolean touchesAnotherShip(int x, int y) {

@@ -61,6 +61,7 @@ public class Main extends Application {
             activeSetupScene.shutdown();
             activeSetupScene = null;
         }
+        audioManager.stopEndMusic();
         audioManager.playMenuMusic();
         MainMenuScene mainMenuScene = new MainMenuScene(
             audioManager,
@@ -98,6 +99,13 @@ public class Main extends Application {
     }
 
     private void showEndScene(String title, String message) {
+        if ("Victory".equalsIgnoreCase(title)) {
+            audioManager.playVictoryMusic();
+        } else if ("Defeat".equalsIgnoreCase(title) || "Loss".equalsIgnoreCase(title)) {
+            audioManager.playLossMusic();
+        } else {
+            audioManager.stopEndMusic();
+        }
         EndScene endScene = new EndScene(audioManager, title, message, this::showMainMenu, Platform::exit);
         setScene(endScene.createScene());
     }
