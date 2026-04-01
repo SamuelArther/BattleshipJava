@@ -244,8 +244,8 @@ public class SetupScene implements NetworkMessageListener {
             difficultyLabel.setTextFill(Color.web("#f4fbff"));
             difficultyLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 18));
             difficultyComboBox = new ComboBox<>();
-            difficultyComboBox.getItems().addAll(Difficulty.LEVEL_1, Difficulty.LEVEL_2);
-            difficultyComboBox.getSelectionModel().select(Difficulty.LEVEL_2);
+            difficultyComboBox.getItems().addAll(Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD, Difficulty.NIGHTMARE, Difficulty.US_NAVY);
+            difficultyComboBox.getSelectionModel().select(Difficulty.MEDIUM);
             difficultyComboBox.setPrefWidth(260);
             difficultyDescriptionLabel = new Label();
             difficultyDescriptionLabel.setTextFill(Color.web("#d7e9ff"));

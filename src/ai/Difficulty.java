@@ -1,8 +1,11 @@
 package ai;
 
 public enum Difficulty {
-    LEVEL_1("Level 1", "Random shots only. Best for a relaxed game."),
-    LEVEL_2("Level 2", "Targets adjacent tiles after a hit. More challenging.");
+    EASY("Easy", "Random shots only. Best for beginners."),
+    MEDIUM("Medium", "Targets adjacent tiles after a hit."),
+    HARD("Hard", "Tracks hit direction to sink ships efficiently."),
+    NIGHTMARE("Nightmare", "Parity hunting with precision line targeting. Nearly unbeatable."),
+    US_NAVY("US Navy", "Probability density targeting. Calculates the most likely ship location every turn. Plays near-perfectly.");
 
     private final String displayName;
     private final String description;

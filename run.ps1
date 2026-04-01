@@ -1,42 +1,98 @@
-param(
-    [string]$JavaFxLib = "C:\Users\samue\Downloads\openjfx-26_windows-x64_bin-sdk\javafx-sdk-26\lib"
-)
+# BattleshipJava launcher
+$ErrorActionPreference = 'Stop'
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$outDir    = Join-Path $scriptDir "out"
 
-$ErrorActionPreference = "Stop"
+function Find-JavaFX {
+    # Valid SDK: has javafx.controls.jar AND DLLs in same dir OR sibling bin/
+    function Has-Dlls($p) {
+        if (Get-ChildItem $p -Filter "prism_d3d.dll" -EA SilentlyContinue | Select-Object -First 1) { return $true }
+        $bin = Join-Path (Split-Path $p -Parent) "bin"
+        if (Get-ChildItem $bin -Filter "prism_d3d.dll" -EA SilentlyContinue | Select-Object -First 1) { return $true }
+        return $false
+    }
+    function Valid-SDK($p) {
+        (Test-Path (Join-Path $p "javafx.controls.jar")) -and (Has-Dlls $p)
+    }
 
-if (!(Test-Path $JavaFxLib)) {
-    throw "JavaFX lib folder not found: $JavaFxLib"
+    $locs = @(
+        "$env:LOCALAPPDATA\javafx\lib",
+        "$env:ProgramFiles\javafx\lib"
+    )
+    foreach ($p in $locs) { if (Valid-SDK $p) { return $p } }
+
+    foreach ($root in @("$env:LOCALAPPDATA\javafx", "$env:USERPROFILE\Downloads")) {
+        $hit = Get-ChildItem $root -Recurse -Filter "javafx.controls.jar" -EA SilentlyContinue |
+               Where-Object { Valid-SDK $_.DirectoryName } |
+               Select-Object -First 1
+        if ($hit) { return $hit.DirectoryName }
+    }
+    return $null
 }
 
-$projectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $projectRoot
-
-$outDir = Join-Path $projectRoot "out"
-$resourcesDir = Join-Path $projectRoot "resources"
-$sources = Get-ChildItem -Path (Join-Path $projectRoot "src") -Recurse -Filter *.java | ForEach-Object { $_.FullName }
-$resourceFiles = Get-ChildItem -Path $resourcesDir -Recurse -File
-$compileClasspath = "$JavaFxLib\javafx.controls.jar;$JavaFxLib\javafx.graphics.jar;$JavaFxLib\javafx.base.jar;$JavaFxLib\javafx.media.jar"
-
-if (!(Test-Path $outDir)) {
-    New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+function Show-Msg($msg, $title) {
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show($msg, $title, 0, 48) | Out-Null
 }
 
-$mainClass = Join-Path $outDir "Main.class"
-$needsBuild = !(Test-Path $mainClass)
+try {
 
-if (!$needsBuild) {
-    $latestInput = ($sources + $resourceFiles.FullName | Get-Item | Sort-Object LastWriteTime -Descending | Select-Object -First 1).LastWriteTime
-    $latestOutput = (Get-ChildItem -Path $outDir -Recurse -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1).LastWriteTime
-    $needsBuild = $latestInput -gt $latestOutput
+    # ── Java check ──────────────────────────────────────────
+    $javaOk = $false
+    try {
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName               = "java"
+        $psi.Arguments              = "-version"
+        $psi.UseShellExecute        = $false
+        $psi.RedirectStandardError  = $true
+        $psi.RedirectStandardOutput = $true
+        $psi.CreateNoWindow         = $true
+        $p   = [System.Diagnostics.Process]::Start($psi)
+        $out = $p.StandardError.ReadToEnd() + $p.StandardOutput.ReadToEnd()
+        $p.WaitForExit()
+        if ($out -match '"(\d+)') { $javaOk = ([int]$Matches[1] -ge 17) }
+    } catch { $javaOk = $false }
+
+    if (-not $javaOk) {
+        Show-Msg "Java 17 or later is required.`nGet it free at https://adoptium.net" "BattleshipJava"
+        exit 1
+    }
+
+    # ── JavaFX check / auto-download ────────────────────────
+    $cacheFile = Join-Path $scriptDir ".javafx_path"
+    $jfx = $null
+    if (Test-Path $cacheFile) {
+        $cached = (Get-Content $cacheFile -Raw).Trim()
+        if (Test-Path (Join-Path $cached "javafx.controls.jar")) { $jfx = $cached }
+    }
+    if (-not $jfx) { $jfx = Find-JavaFX }
+    if ($jfx) { $jfx | Set-Content $cacheFile }
+    if (-not $jfx) {
+        Add-Type -AssemblyName System.Windows.Forms
+        $r = [System.Windows.Forms.MessageBox]::Show(
+            "JavaFX SDK was not found.`nDownload it now? (~70 MB)",
+            "BattleshipJava", 4, 32)
+        if ($r -ne 6) { exit 1 }
+        $dlDir = Join-Path $env:LOCALAPPDATA "javafx"
+        $zip   = Join-Path $dlDir "openjfx.zip"
+        New-Item -ItemType Directory -Force -Path $dlDir | Out-Null
+        Invoke-WebRequest "https://download2.gluonhq.com/openjfx/21.0.3/openjfx-21.0.3_windows-x64_bin-sdk.zip" `
+            -OutFile $zip -UseBasicParsing
+        Expand-Archive $zip (Join-Path $dlDir "sdk") -Force
+        Remove-Item $zip -ErrorAction SilentlyContinue
+        $jfx = Find-JavaFX
+        if (-not $jfx) { Show-Msg "JavaFX installation failed." "BattleshipJava"; exit 1 }
+    }
+
+    # ── Launch ──────────────────────────────────────────────
+    Start-Process "java" -ArgumentList @(
+        "--enable-native-access=javafx.graphics,javafx.media",
+        "--module-path", "`"$jfx`"",
+        "--add-modules", "javafx.controls,javafx.media",
+        "-cp", "`"$outDir`"",
+        "Main"
+    )
+
+} catch {
+    Show-Msg "BattleshipJava failed to launch:`n`n$_" "BattleshipJava - Error"
 }
-
-if ($needsBuild) {
-    Write-Host "Building Battleship..."
-    Remove-Item $outDir -Recurse -Force -ErrorAction SilentlyContinue
-    New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-    javac -Xlint:none -cp $compileClasspath -d $outDir $sources
-    Copy-Item (Join-Path $resourcesDir "*") $outDir -Recurse -Force
-}
-
-Write-Host "Launching Battleship..."
-java --enable-native-access=javafx.graphics,javafx.media --module-path $JavaFxLib --add-modules javafx.controls,javafx.media -cp $outDir Main

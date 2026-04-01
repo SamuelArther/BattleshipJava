@@ -65,6 +65,7 @@ public class GameScene implements NetworkMessageListener {
     private Label enemySummaryLabel;
     private Label targetLabel;
     private Button fireButton;
+    private Button passTurnButton;
     private boolean myTurn;
     private boolean gameFinished;
     private boolean shotAnimationActive;
@@ -200,7 +201,13 @@ public class GameScene implements NetworkMessageListener {
         fireButton.setManaged(false);
         fireButton.setVisible(false);
 
-        VBox attackBox = new VBox(10, targetLabel, fireButton);
+        passTurnButton = new Button("Pass Turn");
+        passTurnButton.setPrefWidth(180);
+        passTurnButton.setPrefHeight(48);
+        passTurnButton.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #1d6fa5; -fx-text-fill: white; -fx-border-color: #ffffff; -fx-border-width: 2;");
+        passTurnButton.setOnAction(e -> passTurn());
+
+        VBox attackBox = new VBox(10, targetLabel, fireButton, passTurnButton);
         attackBox.setAlignment(Pos.CENTER);
         enemyBox.getChildren().add(attackBox);
 
@@ -628,9 +635,37 @@ public class GameScene implements NetworkMessageListener {
         if (fireButton != null) {
             fireButton.setDisable(true);
         }
+        if (passTurnButton != null) {
+            passTurnButton.setDisable(!canFire);
+        }
         if (targetLabel != null && selectedTargetX < 0 && !shotAnimationActive) {
             targetLabel.setText(canFire ? "Click an enemy square to fire." : "Waiting for turn...");
         }
+    }
+
+    private void passTurn() {
+        if (gameFinished || !myTurn || shotAnimationActive || pendingAttackX >= 0) {
+            return;
+        }
+        myTurn = false;
+        updateEnemyInteractivity();
+
+        if (networkSession != null) {
+            statusLabel.setText("Turn passed.");
+            networkSession.sendTurn();
+            return;
+        }
+        if (isLocalMultiplayer) {
+            statusLabel.setText("Player " + currentPlayer + " passed their turn.");
+            PauseTransition pause = new PauseTransition(Duration.seconds(0.5));
+            pause.setOnFinished(event -> showHandoffOverlay());
+            pause.play();
+            return;
+        }
+        statusLabel.setText("You passed your turn. AI is thinking...");
+        PauseTransition pause = new PauseTransition(Duration.seconds(0.7));
+        pause.setOnFinished(event -> executeAiTurn());
+        pause.play();
     }
 
     private void animateShot(Button targetButton, Runnable onImpact) {

@@ -118,12 +118,40 @@ public class Main extends Application {
     }
 
     private void showOfflinePopup() {
-        javafx.scene.control.Alert alert = new javafx.scene.control.Alert(javafx.scene.control.Alert.AlertType.WARNING);
-        alert.setTitle("No Network");
-        alert.setHeaderText("Please connect to the internet.");
-        alert.setContentText("Network multiplayer requires an active network connection. Connect to a network and try again.");
-        alert.initOwner(stage);
-        alert.showAndWait();
+        audioManager.playInternet();
+
+        javafx.stage.Stage popup = new javafx.stage.Stage();
+        popup.initOwner(stage);
+        popup.initModality(javafx.stage.Modality.WINDOW_MODAL);
+        popup.setTitle("No Network");
+        popup.setWidth(460);
+        popup.setHeight(210);
+        popup.setResizable(false);
+
+        javafx.scene.control.Label header = new javafx.scene.control.Label("No Network Connection");
+        header.setFont(javafx.scene.text.Font.font("Segoe UI", javafx.scene.text.FontWeight.BOLD, 18));
+        header.setTextFill(javafx.scene.paint.Color.web("#f4fbff"));
+
+        javafx.scene.control.Label msg = new javafx.scene.control.Label(
+                "Network multiplayer requires an active connection.\nPlease connect to a network and try again.");
+        msg.setFont(javafx.scene.text.Font.font("Segoe UI", 14));
+        msg.setTextFill(javafx.scene.paint.Color.web("#d7e9ff"));
+        msg.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+
+        Button okBtn = new Button("OK");
+        okBtn.setFont(javafx.scene.text.Font.font("Segoe UI", javafx.scene.text.FontWeight.BOLD, 14));
+        okBtn.setMinWidth(120);
+        okBtn.setDefaultButton(true);
+        okBtn.setStyle("-fx-background-color:#1565c0;-fx-text-fill:white;-fx-padding:8 28;-fx-cursor:hand;");
+        okBtn.setOnAction(e -> popup.close());
+
+        VBox root = new VBox(16, header, msg, okBtn);
+        root.setPadding(new javafx.geometry.Insets(28));
+        root.setAlignment(javafx.geometry.Pos.CENTER);
+        root.setStyle("-fx-background-color:#0b1f33;");
+
+        popup.setScene(new Scene(root));
+        popup.showAndWait();
     }
 
     private void showSetup(GameMode gameMode) {
