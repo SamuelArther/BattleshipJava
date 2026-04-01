@@ -26,6 +26,8 @@ public class NetworkGameSession {
     private volatile boolean remoteReady;
     private volatile boolean started;
     private volatile boolean closed;
+    private volatile String joinCode;
+    private LanDiscovery lanDiscovery;
 
     public NetworkGameSession(NetworkMessageListener listener) {
         this.listener = listener;
@@ -43,13 +45,21 @@ public class NetworkGameSession {
         return host;
     }
 
+    public String getJoinCode() {
+        return joinCode;
+    }
+
     public void host(int port) {
         host = true;
+        joinCode = LanDiscovery.generateCode();
+        lanDiscovery = new LanDiscovery();
+        lanDiscovery.startBroadcasting(joinCode);
         Thread hostThread = new Thread(() -> {
             try {
                 serverSocket = new ServerSocket(port);
-                dispatchWaiting("Hosting on port " + port + ". Waiting for a player...");
+                dispatchWaiting("Waiting for a player to connect with code " + joinCode + "...");
                 Socket accepted = serverSocket.accept();
+                lanDiscovery.stopBroadcasting();
                 initializeSocket(accepted);
                 sendMessage("PLACE_SHIPS");
                 dispatch(NetworkMessageListener::onConnected);
@@ -68,7 +78,7 @@ public class NetworkGameSession {
         host = false;
         Thread joinThread = new Thread(() -> {
             try {
-                dispatchWaiting("Connecting to " + hostAddress + ":" + port + "...");
+                dispatchWaiting("Connecting to host...");
                 Socket connected = new Socket();
                 connected.connect(new InetSocketAddress(hostAddress, port), 4000);
                 initializeSocket(connected);
@@ -81,6 +91,24 @@ public class NetworkGameSession {
         }, "battleship-join-thread");
         joinThread.setDaemon(true);
         joinThread.start();
+    }
+
+    public void joinWithCode(String code) {
+        host = false;
+        String upper = code.trim().toUpperCase();
+        dispatchWaiting("Searching for host with code " + upper + "...");
+        LanDiscovery.findHost(upper,
+            hostAddress -> {
+                if (!closed) {
+                    join(hostAddress, DEFAULT_PORT);
+                }
+            },
+            () -> {
+                if (!closed) {
+                    dispatchError("No host found with code " + upper + ". Make sure you're on the same network and the code is correct.");
+                }
+            }
+        );
     }
 
     public void sendReady() {
@@ -111,6 +139,9 @@ public class NetworkGameSession {
 
     public void close() {
         closed = true;
+        if (lanDiscovery != null) {
+            lanDiscovery.stopBroadcasting();
+        }
         tryClose(reader);
         tryClose(writer);
         tryClose(socket);

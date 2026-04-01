@@ -15,7 +15,10 @@ public class AudioManager {
     private enum SoundEffect {
         FIRE("/audio/fire.mp3"),
         EXPLOSION("/audio/explosion.mp3"),
-        SELECT("/audio/select.mp3");
+        SELECT("/audio/select.mp3"),
+        SIR_YES_SIR("/audio/siryessir.mp3"),
+        INTERNET("/audio/internet.mp3"),
+        BALLISTIC("/audio/ballistic.mp3");
 
         private final String resourcePath;
 
@@ -33,6 +36,9 @@ public class AudioManager {
     private MediaPlayer firePlayer;
     private MediaPlayer explosionPlayer;
     private MediaPlayer selectPlayer;
+    private MediaPlayer sirYesSirPlayer;
+    private MediaPlayer internetPlayer;
+    private MediaPlayer ballisticPlayer;
     private boolean audioAvailable = true;
 
     public AudioManager() {
@@ -53,7 +59,22 @@ public class AudioManager {
     }
 
     public void playSelect() {
+        if (sirYesSirPlayer != null && sirYesSirPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
+            return;
+        }
         selectPlayer = playEffect(soundEffects.get(SoundEffect.SELECT), selectPlayer, false);
+    }
+
+    public void playSirYesSir() {
+        sirYesSirPlayer = playEffect(soundEffects.get(SoundEffect.SIR_YES_SIR), sirYesSirPlayer, false);
+    }
+
+    public void playInternet() {
+        internetPlayer = playEffect(soundEffects.get(SoundEffect.INTERNET), internetPlayer, false);
+    }
+
+    public void playBallistic() {
+        ballisticPlayer = playEffect(soundEffects.get(SoundEffect.BALLISTIC), ballisticPlayer, false);
     }
 
     public void playMenuMusic() {
@@ -126,6 +147,9 @@ public class AudioManager {
         disposePlayer(firePlayer);
         disposePlayer(explosionPlayer);
         disposePlayer(selectPlayer);
+        disposePlayer(sirYesSirPlayer);
+        disposePlayer(internetPlayer);
+        disposePlayer(ballisticPlayer);
         disposePlayer(menuPlayer);
     }
 

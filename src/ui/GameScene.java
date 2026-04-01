@@ -7,6 +7,7 @@ import game.AttackOutcome;
 import game.AttackResult;
 import game.Board;
 import game.Coordinate;
+import game.Ship;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Bounds;
@@ -41,13 +42,23 @@ public class GameScene implements NetworkMessageListener {
     }
 
     private final AudioManager audioManager;
-    private final Board playerBoard;
+    private Board playerBoard;
     private final FinishHandler finishHandler;
     private final Runnable menuAction;
     private final Button[][] playerButtons = new Button[Board.SIZE][Board.SIZE];
     private final Button[][] enemyButtons = new Button[Board.SIZE][Board.SIZE];
-    private final boolean[][] enemyAttacked = new boolean[Board.SIZE][Board.SIZE];
-    private final boolean[][] enemyHits = new boolean[Board.SIZE][Board.SIZE];
+    private boolean[][] enemyAttacked = new boolean[Board.SIZE][Board.SIZE];
+    private boolean[][] enemyHits = new boolean[Board.SIZE][Board.SIZE];
+
+    // Local multiplayer fields
+    private Board player1Board;
+    private Board player2Board;
+    private boolean isLocalMultiplayer;
+    private int currentPlayer = 1;
+    private final boolean[][] p1EnemyAttacked = new boolean[Board.SIZE][Board.SIZE];
+    private final boolean[][] p1EnemyHits = new boolean[Board.SIZE][Board.SIZE];
+    private final boolean[][] p2EnemyAttacked = new boolean[Board.SIZE][Board.SIZE];
+    private final boolean[][] p2EnemyHits = new boolean[Board.SIZE][Board.SIZE];
 
     private Label statusLabel;
     private Label playerSummaryLabel;
@@ -68,6 +79,16 @@ public class GameScene implements NetworkMessageListener {
     private StackPane root;
     private Pane effectsLayer;
     private Image bombImage;
+
+    // Ballistic missile perk tracking (index 1=p1, 2=p2; index 1 for single player/network)
+    private final int[] consecutiveSinks = new int[3];
+    private final boolean[] ballisticEarned = new boolean[3];
+    private Label ballisticLabel;
+    private Button ballisticButton;
+    private boolean ballisticMissileActive = false;
+
+    // Ship visibility for local multiplayer
+    private boolean shipsVisible = true;
 
     private GameScene(AudioManager audioManager, Board playerBoard, FinishHandler finishHandler, Runnable menuAction) {
         this.audioManager = audioManager;
@@ -93,6 +114,19 @@ public class GameScene implements NetworkMessageListener {
         return gameScene;
     }
 
+    public static GameScene createLocal(AudioManager audioManager, Board board1, Board board2, FinishHandler finishHandler, Runnable menuAction) {
+        GameScene gameScene = new GameScene(audioManager, board1, finishHandler, menuAction);
+        gameScene.player1Board = board1;
+        gameScene.player2Board = board2;
+        gameScene.enemyBoard = board2;
+        gameScene.isLocalMultiplayer = true;
+        gameScene.currentPlayer = 1;
+        gameScene.myTurn = true;
+        gameScene.enemyAttacked = gameScene.p1EnemyAttacked;
+        gameScene.enemyHits = gameScene.p1EnemyHits;
+        return gameScene;
+    }
+
     public Scene createScene() {
         root = (StackPane) UiFactory.createRootPane();
         effectsLayer = new Pane();
@@ -106,7 +140,7 @@ public class GameScene implements NetworkMessageListener {
         title.setTextFill(Color.web("#f4fbff"));
         title.setFont(Font.font("Georgia", FontWeight.BOLD, 30));
 
-        statusLabel = new Label(myTurn ? "Your turn." : "Opponent's turn.");
+        statusLabel = new Label(isLocalMultiplayer ? "Player 1's turn." : (myTurn ? "Your turn." : "Opponent's turn."));
         statusLabel.setTextFill(Color.web("#d7e9ff"));
         statusLabel.setFont(Font.font("Georgia", 18));
 
@@ -115,6 +149,11 @@ public class GameScene implements NetworkMessageListener {
 
         playerSummaryLabel = createSummaryLabel();
         enemySummaryLabel = createSummaryLabel();
+
+        ballisticLabel = new Label("BALLISTIC MISSILE EARNED!");
+        ballisticLabel.setTextFill(Color.web("#ff0000"));
+        ballisticLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 20));
+        ballisticLabel.setVisible(false);
 
         VBox playerBox = UiFactory.createBoardSection(
             "Your Grid",
@@ -126,6 +165,18 @@ public class GameScene implements NetworkMessageListener {
             )
         );
         playerBox.getChildren().add(playerSummaryLabel);
+        playerBox.getChildren().add(ballisticLabel);
+
+        ballisticButton = new Button("USE BALLISTIC MISSILE");
+        ballisticButton.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-background-color: #8b0000; -fx-text-fill: white; -fx-border-color: #ff0000; -fx-border-width: 2;");
+        ballisticButton.setVisible(false);
+        ballisticButton.setOnAction(e -> {
+            audioManager.playSelect();
+            ballisticMissileActive = true;
+            ballisticButton.setDisable(true);
+            ballisticButton.setText("BALLISTIC MISSILE ARMED");
+        });
+        playerBox.getChildren().add(ballisticButton);
 
         VBox enemyBox = UiFactory.createBoardSection(
             "Enemy Grid",
@@ -175,6 +226,7 @@ public class GameScene implements NetworkMessageListener {
         refreshEnemyGrid();
         updateSummaries();
         updateEnemyInteractivity();
+        audioManager.playSirYesSir();
         return new Scene(root, 1100, 760);
     }
 
@@ -329,31 +381,61 @@ public class GameScene implements NetworkMessageListener {
             });
             return;
         }
+        if (isLocalMultiplayer) {
+            shipsVisible = false;
+            refreshPlayerGrid();
+        }
         statusLabel.setText("Firing at " + toGridRef(x, y) + "...");
         animateShot(enemyButtons[y][x], () -> {
             shotAnimationActive = false;
             AttackOutcome outcome = enemyBoard.receiveAttack(x, y);
             enemyAttacked[y][x] = true;
             enemyHits[y][x] = outcome.getResult() == AttackResult.HIT;
+
+            boolean usedBallistic = ballisticMissileActive;
+            if (ballisticMissileActive) {
+                ballisticMissileActive = false;
+                ballisticButton.setVisible(false);
+                ballisticLabel.setVisible(false);
+                if (outcome.getResult() == AttackResult.HIT) {
+                    outcome = sinkShipWithBallistic(x, y, outcome);
+                }
+            }
+
             markEnemyClearedWater(outcome);
             clearSelectedTarget();
             refreshEnemyGrid();
             if (outcome.getResult() == AttackResult.HIT) {
                 statusLabel.setText(outcome.isSunkShip()
-                    ? "You sunk the enemy " + outcome.getShipType().name().toLowerCase() + "!"
+                    ? (usedBallistic ? "BALLISTIC STRIKE! You sunk the enemy " + outcome.getShipType().name().toLowerCase() + "!" : "You sunk the enemy " + outcome.getShipType().name().toLowerCase() + "!")
                     : "Hit at " + toGridRef(x, y) + "!");
                 audioManager.playExplosion();
             } else {
-                statusLabel.setText("Miss at " + toGridRef(x, y) + ".");
+                statusLabel.setText(usedBallistic ? "Ballistic missile missed. Perk lost." : "Miss at " + toGridRef(x, y) + ".");
             }
 
+            int trackPlayer = isLocalMultiplayer ? currentPlayer : 1;
+            updateBallisticStreak(trackPlayer, outcome.isSunkShip(), outcome.getResult() != AttackResult.HIT);
+
             if (outcome.isGameOver()) {
-                finishGame("Victory", "You destroyed the AI fleet.");
+                if (isLocalMultiplayer) {
+                    finishGame("Victory", "Player " + currentPlayer + " wins! All enemy ships were sunk.");
+                } else {
+                    finishGame("Victory", "You destroyed the AI fleet.");
+                }
                 return;
             }
 
             updateSummaries();
             updateEnemyInteractivity();
+
+            if (isLocalMultiplayer) {
+                PauseTransition pause = new PauseTransition(Duration.seconds(0.5));
+                pause.setOnFinished(event -> showHandoffOverlay());
+                pause.play();
+                return;
+            }
+
             PauseTransition pause = new PauseTransition(Duration.seconds(0.7));
             pause.setOnFinished(event -> executeAiTurn());
             pause.play();
@@ -401,7 +483,7 @@ public class GameScene implements NetworkMessageListener {
                     } else {
                         UiFactory.styleGridButton(button, "#9aa5b1", "o");
                     }
-                } else if (playerBoard.getTile(x, y).hasShip()) {
+                } else if (playerBoard.getTile(x, y).hasShip() && shipsVisible) {
                     UiFactory.styleGridButton(button, "#90caf9", "S");
                 } else {
                     UiFactory.styleGridButton(button, "#b9d7ea", "");
@@ -426,6 +508,73 @@ public class GameScene implements NetworkMessageListener {
                 }
             }
         }
+    }
+
+    private void showHandoffOverlay() {
+        int nextPlayer = currentPlayer == 1 ? 2 : 1;
+
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: #0b1f33;");
+        overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        StackPane.setAlignment(overlay, Pos.CENTER);
+
+        Label heading = new Label("Player " + nextPlayer + "'s Turn");
+        heading.setTextFill(Color.web("#f4fbff"));
+        heading.setFont(Font.font("Georgia", FontWeight.BOLD, 44));
+
+        Label sub = new Label("Pass the computer to Player " + nextPlayer + ", then press Continue.");
+        sub.setTextFill(Color.web("#d7e9ff"));
+        sub.setFont(Font.font("Georgia", 20));
+        sub.setWrapText(true);
+
+        Button continueBtn = new Button("Continue");
+        continueBtn.setPrefWidth(220);
+        continueBtn.setPrefHeight(52);
+        continueBtn.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-background-color: #1d6fa5; -fx-text-fill: white; -fx-border-color: #f4fbff; -fx-border-width: 2;");
+        continueBtn.setOnAction(e -> {
+            audioManager.playSelect();
+            root.getChildren().remove(overlay);
+            swapLocalPlayer();
+        });
+
+        VBox box = new VBox(24, heading, sub, continueBtn);
+        box.setAlignment(Pos.CENTER);
+        box.setMaxWidth(600);
+        overlay.getChildren().add(box);
+        root.getChildren().add(overlay);
+    }
+
+    private void swapLocalPlayer() {
+        currentPlayer = (currentPlayer == 1) ? 2 : 1;
+        playerBoard = (currentPlayer == 1) ? player1Board : player2Board;
+        enemyBoard = (currentPlayer == 1) ? player2Board : player1Board;
+        enemyAttacked = (currentPlayer == 1) ? p1EnemyAttacked : p2EnemyAttacked;
+        enemyHits = (currentPlayer == 1) ? p1EnemyHits : p2EnemyHits;
+        myTurn = true;
+        selectedTargetX = -1;
+        selectedTargetY = -1;
+        pendingAttackX = -1;
+        pendingAttackY = -1;
+        shipsVisible = false;
+        ballisticLabel.setVisible(false);
+        ballisticButton.setVisible(false);
+        refreshPlayerGrid();
+        refreshEnemyGrid();
+        updateSummaries();
+        updateEnemyInteractivity();
+        statusLabel.setText("Player " + currentPlayer + "'s turn. Ships revealed in 3...");
+        PauseTransition reveal = new PauseTransition(Duration.seconds(3));
+        reveal.setOnFinished(e -> {
+            shipsVisible = true;
+            refreshPlayerGrid();
+            boolean earned = ballisticEarned[currentPlayer];
+            ballisticLabel.setVisible(earned);
+            ballisticButton.setVisible(earned);
+            ballisticButton.setDisable(ballisticMissileActive);
+            ballisticButton.setText(ballisticMissileActive ? "BALLISTIC MISSILE ARMED" : "USE BALLISTIC MISSILE");
+            statusLabel.setText("Player " + currentPlayer + "'s turn.");
+        });
+        reveal.play();
     }
 
     private void finishGame(String title, String message) {
@@ -558,6 +707,38 @@ public class GameScene implements NetworkMessageListener {
         for (Coordinate coordinate : outcome.getClearedCoordinates()) {
             enemyAttacked[coordinate.y()][coordinate.x()] = true;
             enemyHits[coordinate.y()][coordinate.x()] = false;
+        }
+    }
+
+    private AttackOutcome sinkShipWithBallistic(int hitX, int hitY, AttackOutcome initialOutcome) {
+        Ship ship = enemyBoard.getTile(hitX, hitY).getShip();
+        AttackOutcome last = initialOutcome;
+        for (Coordinate coord : ship.getCoordinates()) {
+            if (coord.x() == hitX && coord.y() == hitY) {
+                continue;
+            }
+            AttackOutcome next = enemyBoard.receiveAttack(coord.x(), coord.y());
+            enemyAttacked[coord.y()][coord.x()] = true;
+            enemyHits[coord.y()][coord.x()] = true;
+            last = next;
+        }
+        return last;
+    }
+
+    private void updateBallisticStreak(int playerIndex, boolean wasSink, boolean wasMiss) {
+        if (ballisticEarned[playerIndex]) {
+            return;
+        }
+        if (wasMiss) {
+            consecutiveSinks[playerIndex] = 0;
+        } else if (wasSink) {
+            consecutiveSinks[playerIndex]++;
+            if (consecutiveSinks[playerIndex] >= 2) {
+                ballisticEarned[playerIndex] = true;
+                ballisticLabel.setVisible(true);
+                ballisticButton.setVisible(true);
+                audioManager.playBallistic();
+            }
         }
     }
 }

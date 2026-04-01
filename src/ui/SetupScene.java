@@ -23,6 +23,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import network.LanDiscovery;
 import network.NetworkGameSession;
 import network.NetworkMessageListener;
 
@@ -48,6 +49,7 @@ public class SetupScene implements NetworkMessageListener {
 
     private final AudioManager audioManager;
     private final GameMode gameMode;
+    private final int playerNum;
     private final Runnable backAction;
     private final SinglePlayerStartHandler singlePlayerStartHandler;
     private final NetworkStartHandler networkStartHandler;
@@ -63,15 +65,21 @@ public class SetupScene implements NetworkMessageListener {
     private Label selectedShipLabel;
     private Label difficultyDescriptionLabel;
     private ComboBox<Difficulty> difficultyComboBox;
-    private TextField hostField;
+    private TextField codeField;
     private Button connectButton;
     private Button readyButton;
+    private Label codeDisplayLabel;
     private boolean localReady;
     private NetworkGameSession networkSession;
 
     public SetupScene(AudioManager audioManager, GameMode gameMode, Runnable backAction, SinglePlayerStartHandler singlePlayerStartHandler, NetworkStartHandler networkStartHandler) {
+        this(audioManager, gameMode, 1, backAction, singlePlayerStartHandler, networkStartHandler);
+    }
+
+    public SetupScene(AudioManager audioManager, GameMode gameMode, int playerNum, Runnable backAction, SinglePlayerStartHandler singlePlayerStartHandler, NetworkStartHandler networkStartHandler) {
         this.audioManager = audioManager;
         this.gameMode = gameMode;
+        this.playerNum = playerNum;
         this.backAction = backAction;
         this.singlePlayerStartHandler = singlePlayerStartHandler;
         this.networkStartHandler = networkStartHandler;
@@ -188,6 +196,9 @@ public class SetupScene implements NetworkMessageListener {
 
     @Override
     public void onError(String message) {
+        if (gameMode == GameMode.HOST || gameMode == GameMode.JOIN) {
+            audioManager.playInternet();
+        }
         statusLabel.setText(message);
         localReady = false;
         if (connectButton != null && gameMode == GameMode.JOIN) {
@@ -220,7 +231,7 @@ public class SetupScene implements NetworkMessageListener {
         Button rotateButton = UiFactory.createMenuButton("Rotate (R)", audioManager, this::rotateShip);
         Button randomButton = UiFactory.createMenuButton("Randomize", audioManager, this::randomizeBoard);
         Button clearButton = UiFactory.createMenuButton("Clear Board", audioManager, this::clearBoard);
-        readyButton = UiFactory.createMenuButton(gameMode == GameMode.SINGLEPLAYER ? "Start Game" : "Ready", audioManager, this::handleReady);
+        readyButton = UiFactory.createMenuButton(gameMode == GameMode.SINGLEPLAYER ? "Start Game" : gameMode == GameMode.LOCAL ? "Done" : "Ready", audioManager, this::handleReady);
         Button backButton = UiFactory.createMenuButton("Back", audioManager, () -> {
             shutdown();
             backAction.run();
@@ -251,19 +262,38 @@ public class SetupScene implements NetworkMessageListener {
     }
 
     private Node buildModeHeader() {
+        if (gameMode == GameMode.LOCAL) {
+            Label helper = new Label("Player " + playerNum + ": select a ship, place it on the grid. Press Done when finished.");
+            helper.setTextFill(Color.web("#d7e9ff"));
+            return helper;
+        }
         if (gameMode == GameMode.HOST) {
-            Label hostInfo = new Label("Share this IP on port " + NetworkGameSession.DEFAULT_PORT + ": " + getLocalIpAddress());
-            hostInfo.setTextFill(Color.web("#d7e9ff"));
-            return hostInfo;
+            Label helpText = new Label("Share this code with your opponent:");
+            helpText.setTextFill(Color.web("#d7e9ff"));
+            codeDisplayLabel = new Label("Generating...");
+            codeDisplayLabel.setTextFill(Color.web("#ffd166"));
+            codeDisplayLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 32));
+            VBox hostBox = new VBox(2, helpText, codeDisplayLabel);
+            return hostBox;
         }
         if (gameMode == GameMode.JOIN) {
-            Label joinLabel = new Label("Host IP");
+            Label joinLabel = new Label("Game Code");
             joinLabel.setTextFill(Color.web("#f4fbff"));
-            hostField = new TextField();
-            hostField.setPromptText("192.168.1.10");
-            hostField.setPrefWidth(220);
-            connectButton = UiFactory.createMenuButton("Connect", audioManager, this::connectToHost);
-            HBox joinBox = new HBox(12, joinLabel, hostField, connectButton);
+            codeField = new TextField();
+            codeField.setPromptText("ABCDEF");
+            codeField.setPrefWidth(130);
+            codeField.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-transform: uppercase;");
+            codeField.textProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    String upper = newVal.toUpperCase().replaceAll("[^A-Z0-9]", "");
+                    if (upper.length() > 6) upper = upper.substring(0, 6);
+                    if (!upper.equals(newVal)) {
+                        codeField.setText(upper);
+                    }
+                }
+            });
+            connectButton = UiFactory.createMenuButton("Connect", audioManager, this::connectWithCode);
+            HBox joinBox = new HBox(12, joinLabel, codeField, connectButton);
             joinBox.setAlignment(Pos.CENTER_LEFT);
             return joinBox;
         }
@@ -273,16 +303,22 @@ public class SetupScene implements NetworkMessageListener {
     }
 
     private void startNetworkIfNeeded() {
+        if (gameMode == GameMode.LOCAL) {
+            return;
+        }
         if (gameMode == GameMode.HOST) {
             networkSession = new NetworkGameSession(this);
             networkSession.host(NetworkGameSession.DEFAULT_PORT);
+            if (codeDisplayLabel != null) {
+                codeDisplayLabel.setText(networkSession.getJoinCode());
+            }
         }
     }
 
-    private void connectToHost() {
-        String hostAddress = hostField.getText() == null ? "" : hostField.getText().trim();
-        if (hostAddress.isEmpty()) {
-            statusLabel.setText("Enter a host IP address first.");
+    private void connectWithCode() {
+        String code = codeField == null ? "" : codeField.getText().trim();
+        if (code.length() < LanDiscovery.CODE_LENGTH) {
+            statusLabel.setText("Enter the full " + LanDiscovery.CODE_LENGTH + "-character code from the host.");
             return;
         }
         if (networkSession != null) {
@@ -290,7 +326,7 @@ public class SetupScene implements NetworkMessageListener {
         }
         networkSession = new NetworkGameSession(this);
         connectButton.setDisable(true);
-        networkSession.join(hostAddress, NetworkGameSession.DEFAULT_PORT);
+        networkSession.joinWithCode(code);
     }
 
     private void handlePlacement(int x, int y) {
@@ -357,6 +393,11 @@ public class SetupScene implements NetworkMessageListener {
 
         if (gameMode == GameMode.SINGLEPLAYER) {
             singlePlayerStartHandler.start(board, difficultyComboBox.getValue());
+            return;
+        }
+
+        if (gameMode == GameMode.LOCAL) {
+            singlePlayerStartHandler.start(board, null);
             return;
         }
 
@@ -440,6 +481,7 @@ public class SetupScene implements NetworkMessageListener {
             case SINGLEPLAYER -> "Ship Placement";
             case HOST -> "Host Game Setup";
             case JOIN -> "Join Game Setup";
+            case LOCAL -> "Player " + playerNum + " Ship Placement";
         };
     }
 
@@ -448,6 +490,7 @@ public class SetupScene implements NetworkMessageListener {
             case SINGLEPLAYER -> "Select a ship, place it on the grid, and press Start Game.";
             case HOST -> "Starting server. Share your IP with another player.";
             case JOIN -> "Enter the host IP, connect, then place your ships.";
+            case LOCAL -> "Player " + playerNum + ": place all five ships, then press Done.";
         };
     }
 

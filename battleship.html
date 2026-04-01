@@ -1,0 +1,2037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Battleship</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b1f33;
+    --bg2: #112840;
+    --bg3: #163351;
+    --title: #f4fbff;
+    --text: #d7e9ff;
+    --ship: #90caf9;
+    --hit: #ff6b6b;
+    --miss: #9aa5b1;
+    --water: #b9d7ea;
+    --selected: #ffd166;
+    --border: #2a4a6b;
+    --btn-primary: #1565c0;
+    --btn-primary-hover: #1976d2;
+    --btn-secondary: #1a3a5c;
+    --btn-secondary-hover: #1e4a73;
+    --btn-danger: #c62828;
+    --btn-danger-hover: #d32f2f;
+    --btn-success: #2e7d32;
+    --btn-success-hover: #388e3c;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: hidden;
+  }
+
+  #app {
+    width: 100%;
+    max-width: 1200px;
+    padding: 16px;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+  /* ── TITLE ── */
+  h1.game-title {
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    color: var(--title);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(144,202,249,0.4);
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: var(--miss);
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    margin-bottom: 40px;
+  }
+
+  /* ── BUTTONS ── */
+  button {
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px 28px;
+    transition: background 0.15s, transform 0.1s;
+    letter-spacing: 1px;
+  }
+  button:hover { transform: translateY(-1px); }
+  button:active { transform: translateY(0); }
+
+  .btn-primary { background: var(--btn-primary); color: var(--title); }
+  .btn-primary:hover { background: var(--btn-primary-hover); }
+  .btn-secondary { background: var(--btn-secondary); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--btn-secondary-hover); }
+  .btn-danger { background: var(--btn-danger); color: #fff; }
+  .btn-danger:hover { background: var(--btn-danger-hover); }
+  .btn-success { background: var(--btn-success); color: #fff; }
+  .btn-success:hover { background: var(--btn-success-hover); }
+  .btn-warn { background: #e65100; color: #fff; }
+  .btn-warn:hover { background: #f4511e; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+  /* ── MENU ── */
+  #screen-menu { gap: 14px; }
+  .menu-btn { width: 280px; font-size: 1.1rem; padding: 16px 32px; }
+  .menu-divider { width: 280px; height: 1px; background: var(--border); margin: 8px 0; }
+
+  /* ── DIFFICULTY ── */
+  #screen-difficulty { gap: 14px; text-align: center; }
+  #screen-difficulty h2 { color: var(--title); font-size: 1.8rem; margin-bottom: 8px; }
+
+  /* ── PLACEMENT ── */
+  #screen-placement { gap: 16px; }
+  #screen-placement h2 { color: var(--title); font-size: 1.6rem; }
+  .placement-layout {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .ship-list {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    min-width: 200px;
+  }
+  .ship-list h3 { color: var(--title); margin-bottom: 14px; font-size: 1rem; letter-spacing: 1px; }
+  .ship-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .ship-item:hover { background: var(--bg3); }
+  .ship-item.selected { border-color: var(--selected); background: var(--bg3); }
+  .ship-item.placed { opacity: 0.45; cursor: default; }
+  .ship-item .ship-name { color: var(--text); font-size: 0.9rem; font-weight: 600; }
+  .ship-item .ship-size { color: var(--miss); font-size: 0.8rem; }
+  .ship-dots {
+    display: flex;
+    gap: 3px;
+  }
+  .ship-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    background: var(--ship);
+  }
+  .placement-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .hint-text {
+    color: var(--miss);
+    font-size: 0.82rem;
+    text-align: center;
+    margin-top: 4px;
+  }
+  .rotation-badge {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--selected);
+    font-weight: 600;
+  }
+
+  /* ── GRID ── */
+  .grid-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    user-select: none;
+  }
+  .grid-label-row {
+    display: flex;
+    margin-left: 28px;
+  }
+  .grid-col-label {
+    width: 36px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--miss);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .grid-body { display: flex; }
+  .grid-row-labels {
+    display: flex;
+    flex-direction: column;
+  }
+  .grid-row-label {
+    width: 28px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--miss);
+    font-size: 0.78rem;
+    font-weight: 700;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(10, 36px);
+    grid-template-rows: repeat(10, 36px);
+    gap: 2px;
+    border: 1px solid var(--border);
+    padding: 2px;
+    background: var(--bg2);
+    border-radius: 4px;
+  }
+  .cell {
+    width: 36px; height: 36px;
+    border-radius: 3px;
+    background: var(--water);
+    cursor: pointer;
+    transition: background 0.12s, transform 0.08s;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .cell:hover { filter: brightness(1.15); }
+  .cell.ship { background: var(--ship); }
+  .cell.hit { background: var(--hit); cursor: default; }
+  .cell.miss { background: var(--miss); cursor: default; }
+  .cell.hover-valid { background: var(--ship); opacity: 0.7; }
+  .cell.hover-invalid { background: var(--hit); opacity: 0.5; }
+  .cell.selected-cell { background: var(--selected); }
+  .cell.enemy { cursor: crosshair; }
+  .cell.enemy:hover { filter: brightness(1.2); }
+  .cell.no-hover:hover { filter: none; cursor: default; }
+
+  /* ── BOMB ANIMATION ── */
+  @keyframes bombDrop {
+    0%   { transform: translateY(-60px) scale(0.5); opacity: 0; }
+    60%  { transform: translateY(0) scale(1.2); opacity: 1; }
+    75%  { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes explosion {
+    0%   { transform: scale(0); opacity: 1; }
+    50%  { transform: scale(2); opacity: 0.8; }
+    100% { transform: scale(3); opacity: 0; }
+  }
+  @keyframes splash {
+    0%   { transform: scale(0); opacity: 1; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+  .bomb-anim {
+    position: absolute;
+    font-size: 1.4rem;
+    animation: bombDrop 0.35s ease-out forwards;
+    z-index: 10;
+    pointer-events: none;
+  }
+  .explosion-anim {
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffeb3b 0%, #ff6b6b 50%, transparent 70%);
+    animation: explosion 0.4s ease-out forwards;
+    z-index: 9;
+    pointer-events: none;
+  }
+  .splash-anim {
+    position: absolute;
+    width: 100%; height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #b9d7ea 0%, #90caf9 50%, transparent 70%);
+    animation: splash 0.4s ease-out forwards;
+    z-index: 9;
+    pointer-events: none;
+  }
+
+  /* ── GAME SCREEN ── */
+  #screen-game { gap: 20px; }
+  #screen-game h2 { color: var(--title); font-size: 1.5rem; text-align: center; }
+  .game-layout {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .board-section { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .board-label {
+    color: var(--title);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .status-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    text-align: center;
+    min-width: 260px;
+  }
+  .status-bar .turn-text { color: var(--selected); font-weight: 700; font-size: 1.05rem; }
+  .status-bar .sub-text { color: var(--miss); font-size: 0.85rem; margin-top: 4px; }
+  .ships-remaining {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+  .ships-remaining h4 { color: var(--title); margin-bottom: 6px; }
+  .ship-status-row { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+  .ship-status-dot { width: 10px; height: 10px; border-radius: 2px; }
+  .ship-alive { background: var(--ship); }
+  .ship-dead { background: var(--hit); }
+
+  /* ── HOTSEAT ── */
+  #screen-hotseat-handoff {
+    text-align: center;
+    gap: 24px;
+  }
+  #screen-hotseat-handoff h2 { color: var(--title); font-size: 2rem; }
+  #screen-hotseat-handoff p { color: var(--text); font-size: 1.1rem; max-width: 400px; text-align: center; }
+
+  /* ── ONLINE ── */
+  #screen-online { gap: 20px; text-align: center; }
+  #screen-online h2 { color: var(--title); font-size: 1.8rem; }
+  .code-display {
+    background: var(--bg3);
+    border: 2px solid var(--selected);
+    border-radius: 10px;
+    padding: 16px 32px;
+    font-size: 2.5rem;
+    letter-spacing: 8px;
+    color: var(--selected);
+    font-weight: 700;
+    font-family: monospace;
+  }
+  .code-input {
+    background: var(--bg3);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 1.8rem;
+    letter-spacing: 6px;
+    color: var(--title);
+    font-weight: 700;
+    font-family: monospace;
+    text-align: center;
+    width: 220px;
+    text-transform: uppercase;
+    outline: none;
+  }
+  .code-input:focus { border-color: var(--selected); }
+  .online-status {
+    color: var(--miss);
+    font-size: 0.95rem;
+  }
+  .online-status.connected { color: #66bb6a; }
+  .online-status.error { color: var(--hit); }
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--ship);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── END SCREEN ── */
+  #screen-end { text-align: center; gap: 24px; }
+  #screen-end h2 { font-size: clamp(2rem, 6vw, 3rem); color: var(--title); }
+  .win-text { color: #66bb6a; }
+  .lose-text { color: var(--hit); }
+  #screen-end p { color: var(--text); font-size: 1.1rem; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-overlay.hidden { display: none; }
+  .modal {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px 40px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .modal h3 { color: var(--title); font-size: 1.4rem; }
+  .modal p { color: var(--text); font-size: 0.95rem; line-height: 1.5; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: repeat(10, 30px); grid-template-rows: repeat(10, 30px); }
+    .cell { width: 30px; height: 30px; font-size: 0.8rem; }
+    .grid-col-label { width: 30px; }
+    .grid-row-label { height: 30px; }
+    .game-layout { gap: 20px; }
+  }
+
+  /* ── MISC ── */
+  .flex-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .spacer { height: 8px; }
+  .tag {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    color: var(--miss);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ══════ MAIN MENU ══════ -->
+  <div id="screen-menu" class="screen active">
+    <h1 class="game-title">⚓ Battleship</h1>
+    <p class="subtitle">Naval Combat Simulator</p>
+    <button class="menu-btn btn-primary" onclick="showDifficulty()">Play vs AI</button>
+    <button class="menu-btn btn-secondary" onclick="startLocalMultiplayer()">Local Multiplayer</button>
+    <div class="menu-divider"></div>
+    <button class="menu-btn btn-secondary" onclick="showOnlineMenu()">Online Multiplayer</button>
+  </div>
+
+  <!-- ══════ DIFFICULTY ══════ -->
+  <div id="screen-difficulty" class="screen">
+    <h2>Select Difficulty</h2>
+    <p style="color:var(--miss);margin-bottom:12px;">Choose your AI opponent strength</p>
+    <button class="menu-btn btn-success" onclick="startVsAI('easy')">Easy — Random Shots</button>
+    <button class="menu-btn btn-warn" onclick="startVsAI('hard')">Hard — Smart Targeting</button>
+    <div class="spacer"></div>
+    <button class="btn-secondary" onclick="showScreen('screen-menu')">← Back</button>
+  </div>
+
+  <!-- ══════ SHIP PLACEMENT ══════ -->
+  <div id="screen-placement" class="screen">
+    <h2 id="placement-title">Place Your Ships</h2>
+    <p style="color:var(--miss);font-size:0.9rem" id="placement-subtitle">Click a ship, then click the grid to place it</p>
+    <div class="placement-layout">
+      <!-- Ship list -->
+      <div class="ship-list">
+        <h3>FLEET</h3>
+        <div id="ship-list-items"></div>
+        <div class="spacer"></div>
+        <div class="rotation-badge" id="rotation-badge">Orientation: HORIZONTAL →</div>
+        <p class="hint-text">Press <kbd style="background:var(--bg3);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">R</kbd> to rotate</p>
+        <div class="placement-controls">
+          <button class="btn-secondary" onclick="randomizeShips()">🎲 Randomize</button>
+          <button class="btn-danger" onclick="clearShips()">✕ Clear</button>
+          <button class="btn-primary" id="btn-ready" onclick="finishPlacement()" disabled>Ready →</button>
+        </div>
+      </div>
+      <!-- Grid -->
+      <div>
+        <div class="grid-wrapper" id="placement-grid-wrapper"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════ HOTSEAT HANDOFF ══════ -->
+  <div id="screen-hotseat-handoff" class="screen">
+    <h2 id="handoff-title">Pass the device</h2>
+    <p id="handoff-msg">Hand the device to the next player, then click Continue.</p>
+    <button class="btn-primary" style="font-size:1.1rem;padding:14px 36px" onclick="continueHandoff()">Continue →</button>
+  </div>
+
+  <!-- ══════ GAME SCREEN ══════ -->
+  <div id="screen-game" class="screen">
+    <h2 id="game-title">Battle Phase</h2>
+    <div class="status-bar">
+      <div class="turn-text" id="turn-text">Your Turn — Fire!</div>
+      <div class="sub-text" id="sub-text">Click on the enemy grid to attack</div>
+    </div>
+    <div class="game-layout">
+      <div class="board-section">
+        <div class="board-label" id="player-board-label">YOUR FLEET</div>
+        <div class="grid-wrapper" id="player-grid-wrapper"></div>
+        <div class="ships-remaining" id="player-ships-status"></div>
+      </div>
+      <div class="board-section">
+        <div class="board-label" id="enemy-board-label">ENEMY WATERS</div>
+        <div class="grid-wrapper" id="enemy-grid-wrapper"></div>
+        <div class="ships-remaining" id="enemy-ships-status"></div>
+      </div>
+    </div>
+    <div class="flex-row">
+      <button class="btn-secondary" onclick="confirmQuit()">Quit Game</button>
+    </div>
+  </div>
+
+  <!-- ══════ ONLINE ══════ -->
+  <div id="screen-online" class="screen">
+    <h2>Online Multiplayer</h2>
+    <p style="color:var(--miss)">Play over LAN or internet via WebRTC</p>
+    <div class="flex-row">
+      <button class="btn-primary" onclick="hostOnlineGame()">Host Game</button>
+      <button class="btn-secondary" onclick="showJoinUI()">Join Game</button>
+    </div>
+    <!-- Host UI -->
+    <div id="host-ui" style="display:none;flex-direction:column;align-items:center;gap:12px">
+      <p style="color:var(--text)">Share this code with your opponent:</p>
+      <div class="code-display" id="host-code">------</div>
+      <div class="online-status" id="host-status"><span class="spinner"></span> Waiting for connection…</div>
+      <button class="btn-secondary" onclick="cancelOnline()">← Cancel</button>
+    </div>
+    <!-- Join UI -->
+    <div id="join-ui" style="display:none;flex-direction:column;align-items:center;gap:12px">
+      <p style="color:var(--text)">Enter the host's 6-character code:</p>
+      <input class="code-input" id="join-code-input" maxlength="6" placeholder="XXXXXX" oninput="this.value=this.value.toUpperCase()">
+      <button class="btn-primary" onclick="joinOnlineGame()">Connect</button>
+      <div class="online-status" id="join-status"></div>
+      <button class="btn-secondary" onclick="cancelOnline()">← Cancel</button>
+    </div>
+    <button class="btn-secondary" id="btn-back-online" onclick="showScreen('screen-menu')">← Back</button>
+  </div>
+
+  <!-- ══════ END SCREEN ══════ -->
+  <div id="screen-end" class="screen">
+    <h2 id="end-title">Game Over</h2>
+    <p id="end-msg">The battle has concluded.</p>
+    <button class="btn-primary menu-btn" onclick="goToMenu()">Main Menu</button>
+  </div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">Confirm</h3>
+    <p id="modal-msg">Are you sure?</p>
+    <div class="flex-row">
+      <button class="btn-danger" id="modal-confirm-btn">Yes</button>
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CONSTANTS & SHIP DEFINITIONS
+// ══════════════════════════════════════════════════════════
+const SHIPS = [
+  { name: 'Carrier',    size: 5 },
+  { name: 'Battleship', size: 4 },
+  { name: 'Cruiser',    size: 3 },
+  { name: 'Submarine',  size: 3 },
+  { name: 'Destroyer',  size: 2 },
+];
+const COLS = 'ABCDEFGHIJ'.split('');
+const SIZE = 10;
+
+// ══════════════════════════════════════════════════════════
+//  AUDIO ENGINE
+// ══════════════════════════════════════════════════════════
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+function playSound(type) {
+  try {
+    const ctx = getAudioCtx();
+    if (type === 'fire') {
+      // Whistle/whoosh
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.3);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+      osc.start(); osc.stop(ctx.currentTime + 0.3);
+    } else if (type === 'hit') {
+      // Explosion
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.5, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.08));
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass'; filter.frequency.value = 400;
+      src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(1.2, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      src.start();
+    } else if (type === 'miss') {
+      // Splash
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.35, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.06));
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass'; filter.frequency.value = 1200; filter.Q.value = 0.5;
+      src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0.6, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      src.start();
+    } else if (type === 'sunk') {
+      // Deep boom
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = 60;
+      gain.gain.setValueAtTime(0.8, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      osc.start(); osc.stop(ctx.currentTime + 0.8);
+      // Add noise layer
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.6, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.12));
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const g2 = ctx.createGain();
+      src.connect(g2); g2.connect(ctx.destination);
+      g2.gain.value = 0.7; src.start();
+    }
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════════════════════════
+//  SCREEN MANAGEMENT
+// ══════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════════
+//  GRID BUILDER
+// ══════════════════════════════════════════════════════════
+function buildGridHTML(containerId, clickHandler, hoverHandler, leaveHandler) {
+  const wrapper = document.getElementById(containerId);
+  wrapper.innerHTML = '';
+
+  // Col labels
+  const labelRow = document.createElement('div');
+  labelRow.className = 'grid-label-row';
+  COLS.forEach(c => {
+    const lbl = document.createElement('div');
+    lbl.className = 'grid-col-label';
+    lbl.textContent = c;
+    labelRow.appendChild(lbl);
+  });
+  wrapper.appendChild(labelRow);
+
+  const body = document.createElement('div');
+  body.className = 'grid-body';
+
+  // Row labels
+  const rowLabels = document.createElement('div');
+  rowLabels.className = 'grid-row-labels';
+  for (let r = 0; r < SIZE; r++) {
+    const lbl = document.createElement('div');
+    lbl.className = 'grid-row-label';
+    lbl.textContent = r + 1;
+    rowLabels.appendChild(lbl);
+  }
+  body.appendChild(rowLabels);
+
+  // Grid cells
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  grid.id = containerId + '-grid';
+  for (let r = 0; r < SIZE; r++) {
+    for (let c = 0; c < SIZE; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      if (clickHandler) cell.addEventListener('click', () => clickHandler(r, c));
+      if (hoverHandler) cell.addEventListener('mouseenter', () => hoverHandler(r, c));
+      if (leaveHandler) cell.addEventListener('mouseleave', leaveHandler);
+      grid.appendChild(cell);
+    }
+  }
+  body.appendChild(grid);
+  wrapper.appendChild(body);
+  return grid;
+}
+
+function getCell(gridEl, r, c) {
+  return gridEl.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+}
+
+// ══════════════════════════════════════════════════════════
+//  BOARD STATE
+// ══════════════════════════════════════════════════════════
+function emptyBoard() {
+  return Array.from({length: SIZE}, () => Array(SIZE).fill(null));
+}
+
+function placeShipOnBoard(board, ship, row, col, horiz) {
+  for (let i = 0; i < ship.size; i++) {
+    const r = horiz ? row : row + i;
+    const c = horiz ? col + i : col;
+    board[r][c] = ship.name;
+  }
+}
+
+function canPlace(board, ship, row, col, horiz) {
+  for (let i = 0; i < ship.size; i++) {
+    const r = horiz ? row : row + i;
+    const c = horiz ? col + i : col;
+    if (r < 0 || r >= SIZE || c < 0 || c >= SIZE) return false;
+    if (board[r][c]) return false;
+  }
+  return true;
+}
+
+function randomPlacement() {
+  const board = emptyBoard();
+  const placements = [];
+  for (const ship of SHIPS) {
+    let placed = false;
+    let attempts = 0;
+    while (!placed && attempts < 200) {
+      const horiz = Math.random() < 0.5;
+      const row = Math.floor(Math.random() * SIZE);
+      const col = Math.floor(Math.random() * SIZE);
+      if (canPlace(board, ship, row, col, horiz)) {
+        placeShipOnBoard(board, ship, row, col, horiz);
+        placements.push({ ship, row, col, horiz });
+        placed = true;
+      }
+      attempts++;
+    }
+  }
+  return { board, placements };
+}
+
+// ══════════════════════════════════════════════════════════
+//  PLACEMENT PHASE STATE
+// ══════════════════════════════════════════════════════════
+let placementBoard = null;
+let placementPlacements = [];
+let selectedShipIdx = null;
+let horizontal = true;
+let placementGrid = null;
+let placingForPlayer = 1; // 1 or 2
+let placementCallback = null; // called with (board, placements)
+
+function showDifficulty() { showScreen('screen-difficulty'); }
+function startVsAI(diff) {
+  gameMode = 'ai';
+  aiDifficulty = diff;
+  startPlacement(1, (board, placements) => {
+    player1Board = board;
+    player1Placements = placements;
+    const ai = randomPlacement();
+    player2Board = ai.board;
+    player2Placements = ai.placements;
+    startBattle();
+  });
+}
+
+function startLocalMultiplayer() {
+  gameMode = 'local';
+  startPlacement(1, (b1, p1) => {
+    player1Board = b1;
+    player1Placements = p1;
+    showHandoff('Pass to Player 2', 'Player 1 has placed their ships. Pass the device to Player 2 and click Continue.', () => {
+      startPlacement(2, (b2, p2) => {
+        player2Board = b2;
+        player2Placements = p2;
+        showHandoff('Ready for Battle!', 'Both players have placed their ships. Pass the device to Player 1 and click Continue.', () => {
+          startBattle();
+        });
+      });
+    });
+  });
+}
+
+function startPlacement(playerNum, callback) {
+  placingForPlayer = playerNum;
+  placementCallback = callback;
+  placementBoard = emptyBoard();
+  placementPlacements = [];
+  selectedShipIdx = null;
+  horizontal = true;
+
+  document.getElementById('placement-title').textContent =
+    gameMode === 'local' ? `Player ${playerNum}: Place Your Ships` : 'Place Your Ships';
+  document.getElementById('placement-subtitle').textContent =
+    'Click a ship, then click the grid to place it';
+
+  renderShipList();
+  updateRotationBadge();
+  buildGridHTML('placement-grid-wrapper',
+    (r, c) => onPlacementClick(r, c),
+    (r, c) => onPlacementHover(r, c),
+    () => clearPlacementHover()
+  );
+  placementGrid = document.getElementById('placement-grid-wrapper-grid');
+  renderPlacementBoard();
+  document.getElementById('btn-ready').disabled = true;
+  showScreen('screen-placement');
+}
+
+function renderShipList() {
+  const container = document.getElementById('ship-list-items');
+  container.innerHTML = '';
+  SHIPS.forEach((ship, idx) => {
+    const placed = placementPlacements.some(p => p.ship.name === ship.name);
+    const item = document.createElement('div');
+    item.className = 'ship-item' + (placed ? ' placed' : '') + (selectedShipIdx === idx && !placed ? ' selected' : '');
+    item.onclick = () => { if (!placed) { selectedShipIdx = idx; renderShipList(); } };
+
+    const dots = document.createElement('div');
+    dots.className = 'ship-dots';
+    for (let i = 0; i < ship.size; i++) {
+      const d = document.createElement('div');
+      d.className = 'ship-dot';
+      dots.appendChild(d);
+    }
+    const info = document.createElement('div');
+    info.innerHTML = `<div class="ship-name">${ship.name}</div><div class="ship-size">Size: ${ship.size}</div>`;
+
+    item.appendChild(dots);
+    item.appendChild(info);
+    container.appendChild(item);
+  });
+}
+
+function updateRotationBadge() {
+  document.getElementById('rotation-badge').textContent =
+    horizontal ? 'Orientation: HORIZONTAL →' : 'Orientation: VERTICAL ↓';
+}
+
+function onPlacementClick(r, c) {
+  if (selectedShipIdx === null) return;
+  const ship = SHIPS[selectedShipIdx];
+  if (placementPlacements.some(p => p.ship.name === ship.name)) return;
+  if (!canPlace(placementBoard, ship, r, c, horizontal)) return;
+  placeShipOnBoard(placementBoard, ship, r, c, horizontal);
+  placementPlacements.push({ ship, row: r, col: c, horiz: horizontal });
+  selectedShipIdx = null;
+  clearPlacementHover();
+  renderPlacementBoard();
+  renderShipList();
+  if (placementPlacements.length === SHIPS.length) {
+    document.getElementById('btn-ready').disabled = false;
+  }
+}
+
+function onPlacementHover(r, c) {
+  clearPlacementHover();
+  if (selectedShipIdx === null) return;
+  const ship = SHIPS[selectedShipIdx];
+  const valid = canPlace(placementBoard, ship, r, c, horizontal);
+  for (let i = 0; i < ship.size; i++) {
+    const hr = horizontal ? r : r + i;
+    const hc = horizontal ? c + i : c;
+    if (hr >= SIZE || hc >= SIZE) continue;
+    const cell = getCell(placementGrid, hr, hc);
+    if (cell) cell.classList.add(valid ? 'hover-valid' : 'hover-invalid');
+  }
+}
+
+function clearPlacementHover() {
+  if (!placementGrid) return;
+  placementGrid.querySelectorAll('.hover-valid, .hover-invalid').forEach(c => {
+    c.classList.remove('hover-valid', 'hover-invalid');
+  });
+}
+
+function renderPlacementBoard() {
+  if (!placementGrid) return;
+  // Reset
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      const cell = getCell(placementGrid, r, c);
+      cell.className = 'cell';
+    }
+  // Draw ships
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++)
+      if (placementBoard[r][c]) {
+        const cell = getCell(placementGrid, r, c);
+        cell.classList.add('ship');
+      }
+}
+
+function randomizeShips() {
+  const result = randomPlacement();
+  placementBoard = result.board;
+  placementPlacements = result.placements;
+  selectedShipIdx = null;
+  renderPlacementBoard();
+  renderShipList();
+  document.getElementById('btn-ready').disabled = false;
+}
+
+function clearShips() {
+  placementBoard = emptyBoard();
+  placementPlacements = [];
+  selectedShipIdx = null;
+  renderPlacementBoard();
+  renderShipList();
+  document.getElementById('btn-ready').disabled = true;
+}
+
+function finishPlacement() {
+  if (placementPlacements.length < SHIPS.length) return;
+  const cb = placementCallback;
+  const board = placementBoard;
+  const placements = [...placementPlacements];
+  cb(board, placements);
+}
+
+// R key to rotate
+document.addEventListener('keydown', e => {
+  if (e.key === 'r' || e.key === 'R') {
+    if (document.getElementById('screen-placement').classList.contains('active')) {
+      horizontal = !horizontal;
+      updateRotationBadge();
+    }
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  HOTSEAT HANDOFF
+// ══════════════════════════════════════════════════════════
+let handoffCallback = null;
+function showHandoff(title, msg, callback) {
+  handoffCallback = callback;
+  document.getElementById('handoff-title').textContent = title;
+  document.getElementById('handoff-msg').textContent = msg;
+  showScreen('screen-hotseat-handoff');
+}
+function continueHandoff() {
+  const cb = handoffCallback;
+  handoffCallback = null;
+  if (cb) cb();
+}
+
+// ══════════════════════════════════════════════════════════
+//  GAME STATE
+// ══════════════════════════════════════════════════════════
+let gameMode = null; // 'ai', 'local', 'online'
+let aiDifficulty = 'easy';
+let player1Board = null, player1Placements = null;
+let player2Board = null, player2Placements = null;
+let currentPlayer = 1; // whose turn
+let onlineRole = null; // 'host' or 'guest'
+
+// Shot maps: 'hit', 'miss', or null
+let p1Shots = emptyBoard(); // shots P1 has fired (onto P2)
+let p2Shots = emptyBoard(); // shots P2 has fired (onto P1)
+let p1ShipStates = {}; // ship name -> alive/dead
+let p2ShipStates = {};
+let gameOver = false;
+let playerGridEl = null, enemyGridEl = null;
+
+// AI state
+let aiTargetQueue = [];
+let aiHitStack = [];
+let aiLastHit = null;
+let aiHuntDir = null;
+
+// Online
+let peer = null;
+let conn = null;
+
+function startBattle() {
+  gameOver = false;
+  currentPlayer = 1;
+  p1Shots = emptyBoard();
+  p2Shots = emptyBoard();
+  p1ShipStates = {};
+  p2ShipStates = {};
+  SHIPS.forEach(s => { p1ShipStates[s.name] = true; p2ShipStates[s.name] = true; });
+  aiTargetQueue = [];
+  aiHitStack = [];
+  aiLastHit = null;
+  aiHuntDir = null;
+
+  buildGameGrids();
+  updateGameUI();
+  showScreen('screen-game');
+
+  if (gameMode === 'online' && onlineRole === 'guest') {
+    // Guest waits for host to go first
+    setEnemyGridInteractable(false);
+  }
+}
+
+function buildGameGrids() {
+  // Player grid (own ships, no clicking to attack self)
+  playerGridEl = buildGridHTML('player-grid-wrapper', null, null, null);
+  // Enemy grid (attack)
+  enemyGridEl = buildGridHTML('enemy-grid-wrapper',
+    (r, c) => onAttackClick(r, c),
+    null, null
+  );
+  // Add enemy class for cursor
+  enemyGridEl.querySelectorAll('.cell').forEach(c => c.classList.add('enemy'));
+
+  renderPlayerGrid();
+  renderEnemyGrid();
+  renderShipStatuses();
+}
+
+function getPlayerShots() { return currentPlayer === 1 ? p1Shots : p2Shots; }
+function getEnemyBoard() { return currentPlayer === 1 ? player2Board : player1Board; }
+function getPlayerBoard() { return currentPlayer === 1 ? player1Board : player2Board; }
+function getPlayerPlacements() { return currentPlayer === 1 ? player1Placements : player2Placements; }
+function getEnemyPlacements() { return currentPlayer === 1 ? player2Placements : player1Placements; }
+function getEnemyShipStates() { return currentPlayer === 1 ? p2ShipStates : p1ShipStates; }
+function getPlayerShipStates() { return currentPlayer === 1 ? p1ShipStates : p2ShipStates; }
+
+function renderPlayerGrid() {
+  const shots = currentPlayer === 1 ? p2Shots : p1Shots; // shots enemy fired at us
+  const board = getPlayerBoard();
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      const cell = getCell(playerGridEl, r, c);
+      cell.className = 'cell no-hover';
+      cell.innerHTML = '';
+      if (board[r][c]) cell.classList.add('ship');
+      if (shots[r][c] === 'hit') { cell.classList.remove('ship'); cell.classList.add('hit'); cell.innerHTML = '💥'; }
+      else if (shots[r][c] === 'miss') { cell.classList.add('miss'); }
+    }
+}
+
+function renderEnemyGrid() {
+  const shots = getPlayerShots();
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      const cell = getCell(enemyGridEl, r, c);
+      cell.className = 'cell enemy';
+      cell.innerHTML = '';
+      if (shots[r][c] === 'hit') { cell.classList.add('hit'); cell.innerHTML = '💥'; cell.classList.remove('enemy'); cell.classList.add('no-hover'); }
+      else if (shots[r][c] === 'miss') { cell.classList.add('miss'); cell.classList.remove('enemy'); cell.classList.add('no-hover'); }
+    }
+}
+
+function renderShipStatuses() {
+  renderShipStatus('player-ships-status', getPlayerShipStates(), 'YOUR SHIPS');
+  renderShipStatus('enemy-ships-status', getEnemyShipStates(), 'ENEMY SHIPS');
+}
+
+function renderShipStatus(containerId, states, title) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<h4>${title}</h4>`;
+  SHIPS.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'ship-status-row';
+    const dot = document.createElement('div');
+    dot.className = 'ship-status-dot ' + (states[s.name] ? 'ship-alive' : 'ship-dead');
+    const lbl = document.createElement('span');
+    lbl.style.fontSize = '0.82rem';
+    lbl.style.color = states[s.name] ? 'var(--text)' : 'var(--miss)';
+    lbl.textContent = states[s.name] ? s.name : `${s.name} ✕`;
+    if (!states[s.name]) lbl.style.textDecoration = 'line-through';
+    row.appendChild(dot);
+    row.appendChild(lbl);
+    el.appendChild(row);
+  });
+}
+
+function updateGameUI() {
+  if (gameMode === 'ai') {
+    document.getElementById('game-title').textContent = 'Battle Phase — vs AI';
+    document.getElementById('player-board-label').textContent = 'YOUR FLEET';
+    document.getElementById('enemy-board-label').textContent = 'ENEMY WATERS';
+    document.getElementById('turn-text').textContent = 'Your Turn — Fire!';
+    document.getElementById('sub-text').textContent = 'Click the enemy grid to attack';
+  } else if (gameMode === 'local') {
+    document.getElementById('game-title').textContent = `Player ${currentPlayer}'s Turn`;
+    document.getElementById('player-board-label').textContent = `PLAYER ${currentPlayer} FLEET`;
+    document.getElementById('enemy-board-label').textContent = 'ENEMY WATERS';
+    document.getElementById('turn-text').textContent = `Player ${currentPlayer} — Fire!`;
+    document.getElementById('sub-text').textContent = 'Click the enemy grid to attack';
+  } else if (gameMode === 'online') {
+    const myRole = onlineRole;
+    const myTurn = (myRole === 'host' && currentPlayer === 1) || (myRole === 'guest' && currentPlayer === 2);
+    document.getElementById('game-title').textContent = 'Online Battle';
+    document.getElementById('player-board-label').textContent = 'YOUR FLEET';
+    document.getElementById('enemy-board-label').textContent = 'ENEMY WATERS';
+    document.getElementById('turn-text').textContent = myTurn ? 'YOUR TURN — Fire!' : 'Waiting for opponent…';
+    document.getElementById('sub-text').textContent = myTurn ? 'Click the enemy grid to attack' : 'Opponent is choosing their shot';
+  }
+}
+
+function setEnemyGridInteractable(on) {
+  if (!enemyGridEl) return;
+  enemyGridEl.querySelectorAll('.cell.enemy').forEach(c => {
+    c.style.pointerEvents = on ? 'auto' : 'none';
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  ATTACK LOGIC
+// ══════════════════════════════════════════════════════════
+function onAttackClick(r, c) {
+  if (gameOver) return;
+  const shots = getPlayerShots();
+  if (shots[r][c]) return; // already shot here
+
+  // Online: only fire on your turn
+  if (gameMode === 'online') {
+    const myTurn = (onlineRole === 'host' && currentPlayer === 1) || (onlineRole === 'guest' && currentPlayer === 2);
+    if (!myTurn) return;
+  }
+
+  executeAttack(currentPlayer, r, c, true);
+}
+
+function executeAttack(attackingPlayer, r, c, isHuman) {
+  if (gameOver) return;
+  const shots = attackingPlayer === 1 ? p1Shots : p2Shots;
+  const enemyBoard = attackingPlayer === 1 ? player2Board : player1Board;
+  const enemyPlacements = attackingPlayer === 1 ? player2Placements : player1Placements;
+  const enemyStates = attackingPlayer === 1 ? p2ShipStates : p1ShipStates;
+
+  if (shots[r][c]) return;
+
+  playSound('fire');
+
+  const hit = !!enemyBoard[r][c];
+  shots[r][c] = hit ? 'hit' : 'miss';
+
+  // Animate on the right grid
+  // If attacking player == currentPlayer, enemy grid is displayed as enemyGridEl
+  // In local: we're always currentPlayer attacking, so:
+  const targetGridEl = enemyGridEl;
+  animateAttack(targetGridEl, r, c, hit);
+
+  let sunkShip = null;
+  if (hit) {
+    const shipName = enemyBoard[r][c];
+    // Check if sunk
+    const placement = enemyPlacements.find(p => p.ship.name === shipName);
+    if (placement) {
+      let allHit = true;
+      for (let i = 0; i < placement.ship.size; i++) {
+        const sr = placement.horiz ? placement.row : placement.row + i;
+        const sc = placement.horiz ? placement.col + i : placement.col;
+        if (shots[sr][sc] !== 'hit') { allHit = false; break; }
+      }
+      if (allHit && enemyStates[shipName]) {
+        enemyStates[shipName] = false;
+        sunkShip = shipName;
+        playSound('sunk');
+      } else {
+        playSound('hit');
+      }
+    }
+  } else {
+    playSound('miss');
+  }
+
+  // Online: send result
+  if (gameMode === 'online' && isHuman) {
+    sendOnline({ type: 'ATTACK', r, c });
+  }
+
+  // Update display after animation delay
+  setTimeout(() => {
+    renderEnemyGrid();
+    renderShipStatuses();
+
+    // Check win
+    const allSunk = Object.values(enemyStates).every(v => !v);
+    if (allSunk) {
+      handleWin(attackingPlayer);
+      return;
+    }
+
+    // Show sub-text for sunk
+    if (sunkShip) {
+      document.getElementById('sub-text').textContent = `You sunk the ${sunkShip}!`;
+    }
+
+    // Switch turns
+    setTimeout(() => {
+      if (gameMode === 'ai') {
+        // Player always attacks, then AI responds
+        if (attackingPlayer === 1) {
+          // Now AI attacks
+          currentPlayer = 2;
+          renderPlayerGrid(); // This now shows P1's grid with AI's perspective... but we keep P1's view
+          // For AI mode: player is always 1, AI is 2
+          // We swap what's shown temporarily
+          setTimeout(() => {
+            aiTakeTurn();
+          }, 500);
+        } else {
+          // AI just attacked, back to player
+          currentPlayer = 1;
+          renderPlayerGrid();
+          renderEnemyGrid();
+          renderShipStatuses();
+          updateGameUI();
+        }
+      } else if (gameMode === 'local') {
+        // Switch players with handoff screen
+        const nextPlayer = attackingPlayer === 1 ? 2 : 1;
+        showHandoff(
+          `Player ${nextPlayer}'s Turn`,
+          `Player ${attackingPlayer} has taken their shot. Pass the device to Player ${nextPlayer} and click Continue.`,
+          () => {
+            currentPlayer = nextPlayer;
+            rebuildGameGridsForCurrentPlayer();
+            updateGameUI();
+            showScreen('screen-game');
+          }
+        );
+      } else if (gameMode === 'online') {
+        // Switch via network
+        const nextPlayer = attackingPlayer === 1 ? 2 : 1;
+        currentPlayer = nextPlayer;
+        updateGameUI();
+        setEnemyGridInteractable(
+          (onlineRole === 'host' && currentPlayer === 1) ||
+          (onlineRole === 'guest' && currentPlayer === 2)
+        );
+      }
+    }, sunkShip ? 1200 : 600);
+  }, 450);
+}
+
+function rebuildGameGridsForCurrentPlayer() {
+  // Rebuild grids flipping perspective
+  buildGameGrids();
+}
+
+// AI logic
+function aiTakeTurn() {
+  if (gameOver) return;
+  updateGameUI();
+  setEnemyGridInteractable(false);
+
+  let r, c;
+  if (aiDifficulty === 'easy') {
+    // Random
+    let tries = 0;
+    do {
+      r = Math.floor(Math.random() * SIZE);
+      c = Math.floor(Math.random() * SIZE);
+      tries++;
+    } while (p2Shots[r][c] && tries < 200);
+  } else {
+    // Smart: hunt then target
+    if (aiHitStack.length > 0) {
+      // Target mode
+      const adj = getAdjacentUnshot(aiHitStack, p2Shots);
+      if (adj.length > 0) {
+        const pick = adj[Math.floor(Math.random() * adj.length)];
+        r = pick[0]; c = pick[1];
+      } else {
+        // Fallback
+        aiHitStack = [];
+        [r, c] = randomUnshot(p2Shots);
+      }
+    } else {
+      [r, c] = randomUnshot(p2Shots);
+    }
+  }
+
+  // Highlight AI's attack on player grid
+  setTimeout(() => {
+    // AI attacks player 1
+    animateAttackOnPlayerGrid(r, c);
+    const hit = !!player1Board[r][c];
+    p2Shots[r][c] = hit ? 'hit' : 'miss';
+    if (hit && aiDifficulty === 'hard') aiHitStack.push([r, c]);
+
+    let sunkShip = null;
+    if (hit) {
+      const shipName = player1Board[r][c];
+      const placement = player1Placements.find(p => p.ship.name === shipName);
+      if (placement) {
+        let allHit = true;
+        for (let i = 0; i < placement.ship.size; i++) {
+          const sr = placement.horiz ? placement.row : placement.row + i;
+          const sc = placement.horiz ? placement.col + i : placement.col;
+          if (p2Shots[sr][sc] !== 'hit') { allHit = false; break; }
+        }
+        if (allHit && p1ShipStates[shipName]) {
+          p1ShipStates[shipName] = false;
+          sunkShip = shipName;
+          if (aiDifficulty === 'hard') {
+            // Remove sunk ship cells from hitStack
+            aiHitStack = aiHitStack.filter(([hr, hc]) => player1Board[hr][hc] !== shipName);
+          }
+          playSound('sunk');
+        } else playSound('hit');
+      }
+    } else playSound('miss');
+
+    setTimeout(() => {
+      currentPlayer = 1;
+      renderPlayerGrid();
+      renderEnemyGrid();
+      renderShipStatuses();
+      updateGameUI();
+      setEnemyGridInteractable(true);
+
+      if (sunkShip) document.getElementById('sub-text').textContent = `AI sunk your ${sunkShip}!`;
+
+      const allSunk = Object.values(p1ShipStates).every(v => !v);
+      if (allSunk) handleWin(2);
+    }, 450);
+  }, 600);
+}
+
+function getAdjacentUnshot(hitStack, shots) {
+  const candidates = [];
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  const visited = new Set();
+  for (const [hr, hc] of hitStack) {
+    for (const [dr, dc] of dirs) {
+      const nr = hr + dr, nc = hc + dc;
+      const key = `${nr},${nc}`;
+      if (nr >= 0 && nr < SIZE && nc >= 0 && nc < SIZE && !shots[nr][nc] && !visited.has(key)) {
+        candidates.push([nr, nc]);
+        visited.add(key);
+      }
+    }
+  }
+  return candidates;
+}
+
+function randomUnshot(shots) {
+  let r, c, tries = 0;
+  do {
+    r = Math.floor(Math.random() * SIZE);
+    c = Math.floor(Math.random() * SIZE);
+    tries++;
+  } while (shots[r][c] && tries < 200);
+  return [r, c];
+}
+
+function animateAttackOnPlayerGrid(r, c) {
+  const cell = getCell(playerGridEl, r, c);
+  if (!cell) return;
+  const bomb = document.createElement('div');
+  bomb.className = 'bomb-anim';
+  bomb.textContent = '💣';
+  cell.appendChild(bomb);
+  setTimeout(() => bomb.remove(), 500);
+}
+
+function animateAttack(grid, r, c, hit) {
+  const cell = getCell(grid, r, c);
+  if (!cell) return;
+  const bomb = document.createElement('div');
+  bomb.className = 'bomb-anim';
+  bomb.textContent = '💣';
+  cell.appendChild(bomb);
+  setTimeout(() => {
+    bomb.remove();
+    const anim = document.createElement('div');
+    anim.className = hit ? 'explosion-anim' : 'splash-anim';
+    cell.appendChild(anim);
+    setTimeout(() => anim.remove(), 450);
+  }, 350);
+}
+
+function handleWin(winnerPlayer) {
+  gameOver = true;
+  const isLocalWin = gameMode === 'local';
+  const isAI = gameMode === 'ai';
+  const isOnline = gameMode === 'online';
+
+  let title, msg;
+  if (isAI) {
+    if (winnerPlayer === 1) {
+      title = '🎉 Victory!';
+      msg = 'You defeated the AI! Excellent naval strategy!';
+    } else {
+      title = '💀 Defeat';
+      msg = 'The AI has sunk all your ships. Better luck next time!';
+    }
+  } else if (isLocalWin) {
+    title = `Player ${winnerPlayer} Wins! 🎉`;
+    msg = `Player ${winnerPlayer} has sunk all enemy ships and won the battle!`;
+  } else if (isOnline) {
+    const iWon = (onlineRole === 'host' && winnerPlayer === 1) || (onlineRole === 'guest' && winnerPlayer === 2);
+    title = iWon ? '🎉 Victory!' : '💀 Defeat';
+    msg = iWon ? 'You sunk all enemy ships!' : 'Your fleet has been destroyed!';
+    if (iWon) sendOnline({ type: 'WIN' });
+    else sendOnline({ type: 'LOSE' });
+  }
+
+  document.getElementById('end-title').textContent = title;
+  document.getElementById('end-msg').textContent = msg;
+  document.getElementById('end-title').className = winnerPlayer === 1 ? 'win-text' : 'lose-text';
+  setTimeout(() => showScreen('screen-end'), 800);
+}
+
+// ══════════════════════════════════════════════════════════
+//  ONLINE MULTIPLAYER (WebRTC via PeerJS)
+// ══════════════════════════════════════════════════════════
+function showOnlineMenu() {
+  document.getElementById('host-ui').style.display = 'none';
+  document.getElementById('join-ui').style.display = 'none';
+  document.getElementById('btn-back-online').style.display = '';
+  showScreen('screen-online');
+}
+
+function cancelOnline() {
+  if (peer) { try { peer.destroy(); } catch(e) {} peer = null; }
+  conn = null;
+  document.getElementById('host-ui').style.display = 'none';
+  document.getElementById('join-ui').style.display = 'none';
+  document.getElementById('btn-back-online').style.display = '';
+}
+
+function generateRoomCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return code;
+}
+
+function hostOnlineGame() {
+  document.getElementById('btn-back-online').style.display = 'none';
+  document.getElementById('host-ui').style.display = 'flex';
+  document.getElementById('join-ui').style.display = 'none';
+  document.getElementById('host-status').innerHTML = '<span class="spinner"></span> Initializing…';
+  document.getElementById('host-code').textContent = '------';
+
+  const code = generateRoomCode();
+  onlineRole = 'host';
+  gameMode = 'online';
+
+  try {
+    peer = new Peer('bs-' + code, {
+      debug: 0,
+    });
+
+    peer.on('open', id => {
+      document.getElementById('host-code').textContent = code;
+      document.getElementById('host-status').innerHTML = '<span class="spinner"></span> Waiting for opponent to join…';
+    });
+
+    peer.on('connection', c => {
+      conn = c;
+      setupOnlineConnection();
+      document.getElementById('host-status').innerHTML = '<span style="color:#66bb6a">✓ Connected! Starting placement…</span>';
+      setTimeout(() => {
+        startOnlinePlacement();
+      }, 1500);
+    });
+
+    peer.on('error', err => {
+      document.getElementById('host-status').innerHTML = `<span class="error">Error: ${err.type}. Try again.</span>`;
+    });
+  } catch(e) {
+    document.getElementById('host-status').innerHTML = '<span class="error">PeerJS unavailable. Check connection.</span>';
+  }
+}
+
+function showJoinUI() {
+  document.getElementById('btn-back-online').style.display = 'none';
+  document.getElementById('host-ui').style.display = 'none';
+  document.getElementById('join-ui').style.display = 'flex';
+  document.getElementById('join-status').textContent = '';
+}
+
+function joinOnlineGame() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (code.length !== 6) {
+    document.getElementById('join-status').innerHTML = '<span class="error">Please enter a 6-character code.</span>';
+    return;
+  }
+
+  onlineRole = 'guest';
+  gameMode = 'online';
+  document.getElementById('join-status').innerHTML = '<span class="spinner"></span> Connecting…';
+
+  try {
+    peer = new Peer(undefined, { debug: 0 });
+
+    peer.on('open', myId => {
+      conn = peer.connect('bs-' + code);
+      setupOnlineConnection();
+
+      conn.on('open', () => {
+        document.getElementById('join-status').innerHTML = '<span style="color:#66bb6a">✓ Connected! Waiting for host…</span>';
+      });
+
+      conn.on('error', err => {
+        document.getElementById('join-status').innerHTML = `<span class="error">Connection error: ${err}</span>`;
+      });
+    });
+
+    peer.on('error', err => {
+      document.getElementById('join-status').innerHTML = `<span class="error">Error: ${err.type}. Check code and try again.</span>`;
+    });
+  } catch(e) {
+    document.getElementById('join-status').innerHTML = '<span class="error">PeerJS unavailable. Check connection.</span>';
+  }
+}
+
+function setupOnlineConnection() {
+  if (!conn) return;
+  conn.on('data', data => {
+    handleOnlineMessage(data);
+  });
+  conn.on('close', () => {
+    if (!gameOver) {
+      showModal('Connection Lost', 'Your opponent has disconnected.', 'Go to Menu', goToMenu);
+    }
+  });
+}
+
+function sendOnline(msg) {
+  if (conn && conn.open) {
+    try { conn.send(msg); } catch(e) {}
+  }
+}
+
+// Online game flow state
+let onlineMyBoard = null, onlineMyPlacements = null;
+let onlineMyReady = false, onlineTheirReady = false;
+let onlineTheirShots = null;
+
+function startOnlinePlacement() {
+  onlineMyReady = false;
+  onlineTheirReady = false;
+  onlineTheirShots = emptyBoard();
+
+  startPlacement(1, (board, placements) => {
+    onlineMyBoard = board;
+    onlineMyPlacements = placements;
+    onlineMyReady = true;
+    sendOnline({ type: 'READY' });
+    document.getElementById('sub-text') && (document.getElementById('sub-text').textContent = 'Waiting for opponent to place ships…');
+    // Show a waiting screen (reuse game screen with message)
+    document.getElementById('game-title').textContent = 'Waiting…';
+    document.getElementById('turn-text').textContent = 'Waiting for opponent to finish placement';
+    document.getElementById('sub-text').textContent = 'Please wait…';
+    showScreen('screen-game');
+    // Build temporary grids just to show
+    player1Board = onlineMyBoard;
+    player1Placements = onlineMyPlacements;
+    player2Board = emptyBoard();
+    player2Placements = [];
+    p1Shots = emptyBoard(); p2Shots = emptyBoard();
+    p1ShipStates = {}; p2ShipStates = {};
+    SHIPS.forEach(s => { p1ShipStates[s.name] = true; p2ShipStates[s.name] = true; });
+    buildGameGrids();
+    setEnemyGridInteractable(false);
+    checkOnlineBothReady();
+  });
+}
+
+function checkOnlineBothReady() {
+  if (onlineMyReady && onlineTheirReady) {
+    if (onlineRole === 'host') {
+      // Host goes first (player 1)
+      currentPlayer = 1;
+    } else {
+      currentPlayer = 1; // host is always "player 1" in online
+    }
+    renderPlayerGrid();
+    renderEnemyGrid();
+    renderShipStatuses();
+    updateGameUI();
+    const myTurn = onlineRole === 'host';
+    setEnemyGridInteractable(myTurn);
+  }
+}
+
+function handleOnlineMessage(msg) {
+  if (msg.type === 'READY') {
+    onlineTheirReady = true;
+    if (onlineRole === 'guest') {
+      // We need to set their board (we don't know it, it's hidden)
+      player2Board = emptyBoard(); // placeholder
+      player2Placements = [];
+    }
+    checkOnlineBothReady();
+  } else if (msg.type === 'SHIPS') {
+    // Not used in this protocol - boards are hidden
+  } else if (msg.type === 'ATTACK') {
+    const { r, c } = msg;
+    // Opponent attacked us
+    const myBoard = onlineMyBoard;
+    const hit = !!myBoard[r][c];
+    // Update our board's shot map
+    if (onlineRole === 'host') {
+      p2Shots[r][c] = hit ? 'hit' : 'miss';
+      // update player1 ship states
+      if (hit) {
+        const shipName = myBoard[r][c];
+        const placement = onlineMyPlacements.find(p => p.ship.name === shipName);
+        if (placement) {
+          let allHit = true;
+          for (let i = 0; i < placement.ship.size; i++) {
+            const sr = placement.horiz ? placement.row : placement.row + i;
+            const sc = placement.horiz ? placement.col + i : placement.col;
+            if (p2Shots[sr][sc] !== 'hit') { allHit = false; break; }
+          }
+          if (allHit) { p1ShipStates[shipName] = false; playSound('sunk'); }
+          else playSound('hit');
+        }
+      } else playSound('miss');
+    } else {
+      // guest: we are player 2, opponent (host = player1) attacked... no wait
+      // guest = player 2. host attacks as player 1.
+      // Host fires onto guest's board = p1Shots[r][c]
+      p1Shots[r][c] = hit ? 'hit' : 'miss';
+      if (hit) {
+        const shipName = myBoard[r][c];
+        const placement = onlineMyPlacements.find(p => p.ship.name === shipName);
+        if (placement) {
+          let allHit = true;
+          for (let i = 0; i < placement.ship.size; i++) {
+            const sr = placement.horiz ? placement.row : placement.row + i;
+            const sc = placement.horiz ? placement.col + i : placement.col;
+            if (p1Shots[sr][sc] !== 'hit') { allHit = false; break; }
+          }
+          if (allHit) { p2ShipStates[shipName] = false; playSound('sunk'); }
+          else playSound('hit');
+        }
+      } else playSound('miss');
+    }
+
+    // Animate on our player grid
+    animateAttackOnPlayerGrid(r, c);
+    setTimeout(() => {
+      renderPlayerGrid();
+      renderShipStatuses();
+
+      // Check if we lost
+      const myStates = onlineRole === 'host' ? p1ShipStates : p2ShipStates;
+      const allSunk = Object.values(myStates).every(v => !v);
+      if (allSunk) {
+        handleWin(onlineRole === 'host' ? 2 : 1);
+        return;
+      }
+
+      // Switch to our turn
+      currentPlayer = onlineRole === 'host' ? 1 : 2;
+      updateGameUI();
+      setEnemyGridInteractable(true);
+    }, 500);
+  } else if (msg.type === 'WIN') {
+    handleWin(onlineRole === 'host' ? 2 : 1);
+  } else if (msg.type === 'LOSE') {
+    handleWin(onlineRole === 'host' ? 1 : 2);
+  }
+}
+
+// Override renderPlayerGrid / renderEnemyGrid for online
+// In online mode:
+// - "player grid" shows MY board (onlineMyBoard)
+// - shots on my board are the opponent's shots
+// - "enemy grid" shows MY shots fired
+
+// Patch for online: before calling buildGameGrids in online, set up boards correctly
+const _origBuildGameGrids = buildGameGrids;
+// We'll handle online differently in rebuildGameGridsForCurrentPlayer
+
+// ══════════════════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════════════════
+let modalCallback = null;
+function showModal(title, msg, btnLabel, callback) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-msg').textContent = msg;
+  document.getElementById('modal-confirm-btn').textContent = btnLabel || 'Confirm';
+  modalCallback = callback;
+  document.getElementById('modal-confirm-btn').onclick = () => { closeModal(); if (modalCallback) modalCallback(); };
+  document.getElementById('modal-overlay').classList.remove('hidden');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+}
+
+function confirmQuit() {
+  showModal('Quit Game', 'Are you sure you want to quit? Your progress will be lost.', 'Quit', goToMenu);
+}
+
+function goToMenu() {
+  gameOver = true;
+  if (peer) { try { peer.destroy(); } catch(e) {} peer = null; }
+  conn = null;
+  gameMode = null;
+  onlineRole = null;
+  closeModal();
+  showScreen('screen-menu');
+}
+
+// ══════════════════════════════════════════════════════════
+//  ONLINE BOARD RENDERING FIX
+// ══════════════════════════════════════════════════════════
+// Patch renderPlayerGrid and renderEnemyGrid for online
+const origRenderPlayerGrid = renderPlayerGrid;
+const origRenderEnemyGrid = renderEnemyGrid;
+
+// Override for online: player always sees their own ships
+function renderPlayerGrid() {
+  if (gameMode === 'online' && onlineMyBoard) {
+    // My shots received from opponent
+    const incomingShots = onlineRole === 'host' ? p2Shots : p1Shots;
+    for (let r = 0; r < SIZE; r++)
+      for (let c = 0; c < SIZE; c++) {
+        const cell = getCell(playerGridEl, r, c);
+        if (!cell) continue;
+        cell.className = 'cell no-hover';
+        cell.innerHTML = '';
+        if (onlineMyBoard[r][c]) cell.classList.add('ship');
+        if (incomingShots[r][c] === 'hit') { cell.classList.remove('ship'); cell.classList.add('hit'); cell.innerHTML = '💥'; }
+        else if (incomingShots[r][c] === 'miss') { cell.classList.add('miss'); }
+      }
+    return;
+  }
+  // Original logic
+  const shots = currentPlayer === 1 ? p2Shots : p1Shots;
+  const board = getPlayerBoard();
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      const cell = getCell(playerGridEl, r, c);
+      if (!cell) continue;
+      cell.className = 'cell no-hover';
+      cell.innerHTML = '';
+      if (board[r][c]) cell.classList.add('ship');
+      if (shots[r][c] === 'hit') { cell.classList.remove('ship'); cell.classList.add('hit'); cell.innerHTML = '💥'; }
+      else if (shots[r][c] === 'miss') { cell.classList.add('miss'); }
+    }
+}
+
+function renderEnemyGrid() {
+  if (gameMode === 'online') {
+    const myShots = onlineRole === 'host' ? p1Shots : p2Shots;
+    for (let r = 0; r < SIZE; r++)
+      for (let c = 0; c < SIZE; c++) {
+        const cell = getCell(enemyGridEl, r, c);
+        if (!cell) continue;
+        cell.className = 'cell enemy';
+        cell.innerHTML = '';
+        if (myShots[r][c] === 'hit') { cell.classList.add('hit'); cell.innerHTML = '💥'; cell.classList.remove('enemy'); cell.classList.add('no-hover'); }
+        else if (myShots[r][c] === 'miss') { cell.classList.add('miss'); cell.classList.remove('enemy'); cell.classList.add('no-hover'); }
+      }
+    return;
+  }
+  const shots = getPlayerShots();
+  for (let r = 0; r < SIZE; r++)
+    for (let c = 0; c < SIZE; c++) {
+      const cell = getCell(enemyGridEl, r, c);
+      if (!cell) continue;
+      cell.className = 'cell enemy';
+      cell.innerHTML = '';
+      if (shots[r][c] === 'hit') { cell.classList.add('hit'); cell.innerHTML = '💥'; cell.classList.remove('enemy'); cell.classList.add('no-hover'); }
+      else if (shots[r][c] === 'miss') { cell.classList.add('miss'); cell.classList.remove('enemy'); cell.classList.add('no-hover'); }
+    }
+}
+
+function renderShipStatuses() {
+  if (gameMode === 'online') {
+    const myStates = onlineRole === 'host' ? p1ShipStates : p2ShipStates;
+    const theirStates = onlineRole === 'host' ? p2ShipStates : p1ShipStates;
+    renderShipStatus('player-ships-status', myStates, 'YOUR SHIPS');
+    renderShipStatus('enemy-ships-status', theirStates, 'ENEMY SHIPS');
+    return;
+  }
+  renderShipStatus('player-ships-status', getPlayerShipStates(), 'YOUR SHIPS');
+  renderShipStatus('enemy-ships-status', getEnemyShipStates(), 'ENEMY SHIPS');
+}
+
+// Override onAttackClick for online
+const _origOnAttackClick = onAttackClick;
+function onAttackClick(r, c) {
+  if (gameOver) return;
+  if (gameMode === 'online') {
+    const myTurn = (onlineRole === 'host' && currentPlayer === 1) || (onlineRole === 'guest' && currentPlayer === 2);
+    if (!myTurn) return;
+    const myShots = onlineRole === 'host' ? p1Shots : p2Shots;
+    if (myShots[r][c]) return;
+
+    playSound('fire');
+    // We don't know if it's a hit (opponent's board is hidden)
+    // Send attack to opponent, they will confirm
+    sendOnline({ type: 'ATTACK', r, c });
+
+    // Animate bomb drop
+    animateAttack(enemyGridEl, r, c, false); // we'll update after response
+    // Disable grid while waiting
+    setEnemyGridInteractable(false);
+    currentPlayer = onlineRole === 'host' ? 2 : 1;
+    updateGameUI();
+
+    // We handle result when opponent sends ATTACK back (mirrored)
+    // Actually: we need a different approach - let opponent confirm hit/miss
+    // For simplicity: send ATTACK, opponent processes it and sends RESULT back
+    return;
+  }
+  // Non-online
+  const shots = getPlayerShots();
+  if (shots[r][c]) return;
+  executeAttack(currentPlayer, r, c, true);
+}
+
+// Enhanced online message handling for RESULT
+const _origHandleOnlineMessage = handleOnlineMessage;
+function handleOnlineMessage(msg) {
+  if (msg.type === 'ATTACK') {
+    // Opponent attacked us - process and send RESULT
+    const r = msg.r, c = msg.c;
+    const myBoard = onlineMyBoard;
+    const hit = !!myBoard[r][c];
+    const incomingShots = onlineRole === 'host' ? p2Shots : p1Shots;
+    incomingShots[r][c] = hit ? 'hit' : 'miss';
+
+    let sunkShip = null;
+    if (hit) {
+      const shipName = myBoard[r][c];
+      const placement = onlineMyPlacements.find(p => p.ship.name === shipName);
+      const myStates = onlineRole === 'host' ? p1ShipStates : p2ShipStates;
+      if (placement) {
+        let allHit = true;
+        for (let i = 0; i < placement.ship.size; i++) {
+          const sr = placement.horiz ? placement.row : placement.row + i;
+          const sc = placement.horiz ? placement.col + i : placement.col;
+          if (incomingShots[sr][sc] !== 'hit') { allHit = false; break; }
+        }
+        if (allHit && myStates[shipName]) {
+          myStates[shipName] = false;
+          sunkShip = shipName;
+          playSound('sunk');
+        } else playSound('hit');
+      }
+    } else playSound('miss');
+
+    // Send result back
+    sendOnline({ type: 'RESULT', r, c, hit, sunkShip });
+
+    // Animate on our player grid
+    animateAttackOnPlayerGrid(r, c);
+    setTimeout(() => {
+      renderPlayerGrid();
+      renderShipStatuses();
+      // Check if we lost
+      const myStates = onlineRole === 'host' ? p1ShipStates : p2ShipStates;
+      const allSunk = Object.values(myStates).every(v => !v);
+      if (allSunk) {
+        handleWin(onlineRole === 'host' ? 2 : 1);
+        return;
+      }
+      // Now it's our turn
+      currentPlayer = onlineRole === 'host' ? 1 : 2;
+      updateGameUI();
+      setEnemyGridInteractable(true);
+    }, 500);
+
+  } else if (msg.type === 'RESULT') {
+    // Our attack result came back
+    const { r, c, hit, sunkShip } = msg;
+    const myShots = onlineRole === 'host' ? p1Shots : p2Shots;
+    myShots[r][c] = hit ? 'hit' : 'miss';
+
+    // Update enemy ship states
+    const theirStates = onlineRole === 'host' ? p2ShipStates : p1ShipStates;
+    if (sunkShip && theirStates[sunkShip]) {
+      theirStates[sunkShip] = false;
+    }
+
+    // Animate on enemy grid
+    const cell = getCell(enemyGridEl, r, c);
+    if (cell) {
+      const anim = document.createElement('div');
+      anim.className = hit ? 'explosion-anim' : 'splash-anim';
+      cell.appendChild(anim);
+      setTimeout(() => anim.remove(), 450);
+    }
+
+    if (hit) { playSound(sunkShip ? 'sunk' : 'hit'); }
+    else { playSound('miss'); }
+
+    setTimeout(() => {
+      renderEnemyGrid();
+      renderShipStatuses();
+
+      // Check if they lost (all sunk)
+      const allSunk = Object.values(theirStates).every(v => !v);
+      if (allSunk) {
+        handleWin(onlineRole === 'host' ? 1 : 2);
+        return;
+      }
+
+      if (sunkShip) document.getElementById('sub-text').textContent = `You sunk the ${sunkShip}!`;
+    }, 450);
+
+  } else if (msg.type === 'READY') {
+    onlineTheirReady = true;
+    // Set up their board as unknown
+    if (onlineRole === 'guest') {
+      player2Board = emptyBoard();
+      player2Placements = [];
+    } else {
+      player2Board = emptyBoard();
+      player2Placements = [];
+    }
+    checkOnlineBothReady();
+
+  } else if (msg.type === 'WIN') {
+    handleWin(onlineRole === 'host' ? 2 : 1);
+  } else if (msg.type === 'LOSE') {
+    handleWin(onlineRole === 'host' ? 1 : 2);
+  }
+}
+
+// Patch startOnlinePlacement for guest
+function startOnlinePlacement() {
+  onlineMyReady = false;
+  onlineTheirReady = false;
+
+  // Set up initial game state
+  p1Shots = emptyBoard(); p2Shots = emptyBoard();
+  p1ShipStates = {}; p2ShipStates = {};
+  SHIPS.forEach(s => { p1ShipStates[s.name] = true; p2ShipStates[s.name] = true; });
+
+  startPlacement(1, (board, placements) => {
+    onlineMyBoard = board;
+    onlineMyPlacements = placements;
+
+    // For rendering purposes
+    if (onlineRole === 'host') {
+      player1Board = onlineMyBoard;
+      player1Placements = onlineMyPlacements;
+      player2Board = emptyBoard();
+      player2Placements = [];
+    } else {
+      player2Board = onlineMyBoard;
+      player2Placements = onlineMyPlacements;
+      player1Board = emptyBoard();
+      player1Placements = [];
+    }
+
+    onlineMyReady = true;
+    sendOnline({ type: 'READY' });
+
+    document.getElementById('game-title').textContent = 'Online Battle';
+    document.getElementById('turn-text').textContent = 'Waiting for opponent…';
+    document.getElementById('sub-text').textContent = 'Waiting for opponent to finish placement…';
+    showScreen('screen-game');
+    buildGameGrids();
+    setEnemyGridInteractable(false);
+    checkOnlineBothReady();
+  });
+}
+
+function checkOnlineBothReady() {
+  if (!onlineMyReady || !onlineTheirReady) return;
+  // Host goes first
+  currentPlayer = 1;
+  gameOver = false;
+  renderPlayerGrid();
+  renderEnemyGrid();
+  renderShipStatuses();
+  updateGameUI();
+  const myTurn = onlineRole === 'host';
+  setEnemyGridInteractable(myTurn);
+}
+
+// Guest: handle READY before placement done (host connects first, then guest joins)
+// The message handler is already set up on conn.on('data')
+// Guests need to call startOnlinePlacement when connection is established
+peer && conn && conn.on && conn.on('open', () => {
+  if (onlineRole === 'guest') {
+    startOnlinePlacement();
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  ONLINE GUEST: Fix - call startOnlinePlacement on connect
+// ══════════════════════════════════════════════════════════
+// Patched into joinOnlineGame below - see joinOnlineGame function
+
+const _joinOnlineGame = joinOnlineGame;
+function joinOnlineGame() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if (code.length !== 6) {
+    document.getElementById('join-status').innerHTML = '<span class="error">Please enter a 6-character code.</span>';
+    return;
+  }
+  onlineRole = 'guest';
+  gameMode = 'online';
+  document.getElementById('join-status').innerHTML = '<span class="spinner"></span> Connecting…';
+
+  try {
+    peer = new Peer(undefined, { debug: 0 });
+    peer.on('open', myId => {
+      conn = peer.connect('bs-' + code, { reliable: true });
+
+      conn.on('open', () => {
+        document.getElementById('join-status').innerHTML = '<span style="color:#66bb6a">✓ Connected!</span>';
+        setupOnlineConnection();
+        setTimeout(() => startOnlinePlacement(), 800);
+      });
+
+      conn.on('error', err => {
+        document.getElementById('join-status').innerHTML = `<span class="error">Connection error.</span>`;
+      });
+    });
+    peer.on('error', err => {
+      document.getElementById('join-status').innerHTML = `<span class="error">Error: ${err.type}. Check code and try again.</span>`;
+    });
+  } catch(e) {
+    document.getElementById('join-status').innerHTML = '<span class="error">PeerJS unavailable.</span>';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+showScreen('screen-menu');
+</script>
+</body>
+</html>

@@ -22,13 +22,15 @@ import java.net.URL;
 public class MainMenuScene {
     private final AudioManager audioManager;
     private final Runnable playAiAction;
+    private final Runnable localAction;
     private final Runnable hostAction;
     private final Runnable joinAction;
     private final Runnable exitAction;
 
-    public MainMenuScene(AudioManager audioManager, Runnable playAiAction, Runnable hostAction, Runnable joinAction, Runnable exitAction) {
+    public MainMenuScene(AudioManager audioManager, Runnable playAiAction, Runnable localAction, Runnable hostAction, Runnable joinAction, Runnable exitAction) {
         this.audioManager = audioManager;
         this.playAiAction = playAiAction;
+        this.localAction = localAction;
         this.hostAction = hostAction;
         this.joinAction = joinAction;
         this.exitAction = exitAction;
@@ -49,6 +51,7 @@ public class MainMenuScene {
         VBox content = new VBox(18,
             brandBox,
             UiFactory.createMenuButton("Play vs AI", audioManager, playAiAction),
+            UiFactory.createMenuButton("Local Multiplayer", audioManager, localAction),
             UiFactory.createMenuButton("Host Game", audioManager, hostAction),
             UiFactory.createMenuButton("Join Game", audioManager, joinAction),
             UiFactory.createMenuButton("Quit Battleship", audioManager, exitAction)
