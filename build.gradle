@@ -1,0 +1,99 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
+}
+
+// Override with: gradlew packageApp -PappVersion=1.4
+version = project.findProperty('appVersion') ?: '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+// Sources live in src/ and resources/ rather than the Gradle default folders.
+sourceSets {
+    main {
+        java.srcDirs = ['src']
+        resources.srcDirs = ['resources']
+    }
+    test {
+        java.srcDirs = ['test']
+    }
+}
+
+application {
+    mainClass = 'Main'
+}
+
+javafx {
+    version = '21.0.2'
+    modules = ['javafx.controls', 'javafx.media']
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xlint:all'
+}
+
+tasks.named('jar') {
+    archiveBaseName = 'Battleship'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    testLogging {
+        events 'passed', 'failed', 'skipped'
+    }
+}
+
+// Builds a self-contained app for the operating system you run this on, using the JDK's jpackage.
+// Output: build/jpackage/Battleship (Windows and Linux) or build/jpackage/Battleship.app (macOS).
+tasks.register('packageApp', Exec) {
+    group = 'distribution'
+    description = 'Builds a self-contained Battleship app for this OS with jpackage.'
+    dependsOn tasks.jar
+
+    def osName = System.getProperty('os.name').toLowerCase()
+    def isWindows = osName.contains('win')
+    def isMac = osName.contains('mac')
+    def icon = isWindows ? 'packaging/icon.ico' : isMac ? 'packaging/icon.icns' : 'packaging/icon.png'
+    def inputDir = layout.buildDirectory.dir('jpackage-input').get().asFile
+    def outputDir = layout.buildDirectory.dir('jpackage').get().asFile
+    def jarFile = tasks.jar.archiveFile
+
+    inputs.files(configurations.runtimeClasspath)
+    inputs.file(icon)
+    outputs.dir(outputDir)
+
+    executable = new File(System.getProperty('java.home'), isWindows ? 'bin/jpackage.exe' : 'bin/jpackage')
+
+    doFirst {
+        delete(inputDir, outputDir)
+        mkdir(inputDir)
+        copy {
+            from jarFile
+            into inputDir
+        }
+        // JavaFX goes on the module path so jlink bundles it into the app's private runtime.
+        def javafxModulePath = configurations.runtimeClasspath.filter { it.name.startsWith('javafx-') }.asPath
+        args = [
+            '--type', 'app-image',
+            '--name', 'Battleship',
+            '--app-version', project.version.toString(),
+            '--input', inputDir.path,
+            '--main-jar', jarFile.get().asFile.name,
+            '--main-class', 'Main',
+            '--module-path', javafxModulePath,
+            '--add-modules', 'javafx.controls,javafx.media',
+            '--icon', file(icon).path,
+            '--dest', outputDir.path
+        ]
+    }
+}
