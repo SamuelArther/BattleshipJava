@@ -36,7 +36,7 @@ class BattleshipAITest {
         board.placeShip(ShipType.DESTROYER, 4, 4, Orientation.HORIZONTAL);
         BattleshipAI ai = new BattleshipAI(Difficulty.MEDIUM, new Random(1));
 
-        ai.handleShotResult(new Coordinate(4, 4), board.receiveAttack(4, 4).getResult() == AttackResult.HIT);
+        ai.handleShotResult(new Coordinate(4, 4), board.receiveAttack(4, 4));
 
         Coordinate next = ai.nextShot();
         int distance = Math.abs(next.x() - 4) + Math.abs(next.y() - 4);
@@ -51,18 +51,19 @@ class BattleshipAITest {
             board.placeShip(ShipType.DESTROYER, 4, 4, Orientation.HORIZONTAL); // E5 and F5
             BattleshipAI ai = new BattleshipAI(difficulty, new Random(1));
 
-            ai.handleShotResult(new Coordinate(4, 4), board.receiveAttack(4, 4).getResult() == AttackResult.HIT);
+            ai.handleShotResult(new Coordinate(4, 4), board.receiveAttack(4, 4));
             AttackOutcome sunk = board.receiveAttack(5, 4);
             assertTrue(sunk.isSunkShip());
-            ai.handleShotResult(new Coordinate(5, 4), true);
-            ai.markUnavailable(sunk.getClearedCoordinates());
+            ai.handleShotResult(new Coordinate(5, 4), sunk);
 
             Set<Coordinate> knownEmpty = new HashSet<>(sunk.getClearedCoordinates());
+            knownEmpty.add(new Coordinate(4, 4));
+            knownEmpty.add(new Coordinate(5, 4));
             assertFalse(knownEmpty.isEmpty(), "expected the water around the destroyer to be cleared");
             for (int i = 0; i < 20; i++) {
                 Coordinate shot = ai.nextShot();
                 assertFalse(knownEmpty.contains(shot),
-                    difficulty + " shot " + shot + ", which is water cleared around the sunk destroyer");
+                    difficulty + " shot " + shot + ", which is the sunk destroyer or the cleared water around it");
             }
         }
     }
@@ -73,11 +74,14 @@ class BattleshipAITest {
         double medium = averageShotsToWin(Difficulty.MEDIUM, 200);
         double hard = averageShotsToWin(Difficulty.HARD, 200);
         double nightmare = averageShotsToWin(Difficulty.NIGHTMARE, 200);
+        double usNavy = averageShotsToWin(Difficulty.US_NAVY, 200);
 
-        assertTrue(easy > 80, "Easy averaged " + easy + " shots; it fires blind and needs most of the board");
+        assertTrue(easy > 80, "Easy averaged " + easy + " shots; random play needs most of the board");
         assertTrue(medium < easy, "Medium (" + medium + ") should beat Easy (" + easy + ")");
         assertTrue(hard < medium, "Hard (" + hard + ") should beat Medium (" + medium + ")");
         assertTrue(nightmare < hard, "Nightmare (" + nightmare + ") should beat Hard (" + hard + ")");
+        assertTrue(usNavy < nightmare, "US Navy (" + usNavy + ") should beat Nightmare (" + nightmare + ")");
+        assertTrue(usNavy < 45, "US Navy averaged " + usNavy + " shots; expected well under 45");
     }
 
     /** Plays complete games the same way GameScene drives the AI, and returns the average shots per win. */
@@ -95,8 +99,7 @@ class BattleshipAITest {
                 outcome = board.receiveAttack(shot.x(), shot.y());
                 assertNotEquals(AttackResult.ALREADY_ATTACKED, outcome.getResult(), "repeated shot at " + shot);
                 assertNotEquals(AttackResult.INVALID, outcome.getResult(), "off-grid shot at " + shot);
-                ai.handleShotResult(shot, outcome.getResult() == AttackResult.HIT);
-                ai.markUnavailable(outcome.getClearedCoordinates());
+                ai.handleShotResult(shot, outcome);
                 shots++;
             } while (!outcome.isGameOver());
             totalShots += shots;

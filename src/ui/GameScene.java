@@ -461,8 +461,7 @@ public class GameScene implements NetworkMessageListener {
             shotAnimationActive = false;
             AttackOutcome outcome = playerBoard.receiveAttack(shot.x(), shot.y());
             boolean hit = outcome.getResult() == AttackResult.HIT;
-            ai.handleShotResult(shot, hit);
-            ai.markUnavailable(outcome.getClearedCoordinates());
+            ai.handleShotResult(shot, outcome);
             refreshPlayerGrid();
             updateSummaries();
             if (hit) {

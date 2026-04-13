@@ -1,12 +1,15 @@
 package ai;
 
+import game.AttackOutcome;
+import game.AttackResult;
 import game.Board;
 import game.Coordinate;
 import game.ShipType;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,7 +27,8 @@ public class BattleshipAI {
     private int[] direction = null;
 
     // US Navy: track hit/miss per cell and remaining ship sizes
-    private static final int UNSHOT = 0, MISS = 1, HIT = 2;
+    private static final int UNSHOT = 0, MISS = 1, HIT = 2, SUNK = 3;
+    private static final int[][] STEPS = {{0, 1}, {0, -1}, {1, 0}, {-1, 0}};
     private final int[][] shotResult = new int[Board.SIZE][Board.SIZE];
     private final List<Integer> remainingShipSizes = new LinkedList<>();
 
@@ -117,23 +121,26 @@ public class BattleshipAI {
             }
         }
 
-        Coordinate best = null;
+        List<Coordinate> best = new ArrayList<>();
         int bestScore = -1;
         for (int y = 0; y < Board.SIZE; y++) {
             for (int x = 0; x < Board.SIZE; x++) {
-                if (!attempted[y][x] && prob[y][x] > bestScore) {
+                if (attempted[y][x] || prob[y][x] < bestScore) continue;
+                if (prob[y][x] > bestScore) {
                     bestScore = prob[y][x];
-                    best = new Coordinate(x, y);
+                    best.clear();
                 }
+                best.add(new Coordinate(x, y));
             }
         }
-        return best != null ? best : randomUnshot();
+        return best.isEmpty() ? randomUnshot() : best.get(random.nextInt(best.size()));
     }
 
     // Returns true if a placement starting at (y,x) in direction (dy,dx) contains no 'miss' cells
     private boolean placementValid(int y, int x, int dy, int dx, int size) {
         for (int i = 0; i < size; i++) {
-            if (shotResult[y + i * dy][x + i * dx] == MISS) return false;
+            int state = shotResult[y + i * dy][x + i * dx];
+            if (state == MISS || state == SUNK) return false;
         }
         return true;
     }
@@ -207,11 +214,19 @@ public class BattleshipAI {
 
     // ── Public callbacks ────────────────────────────────────────────────────────
 
-    public void handleShotResult(Coordinate coordinate, boolean hit) {
+    public void handleShotResult(Coordinate coordinate, AttackOutcome outcome) {
+        boolean hit = outcome.getResult() == AttackResult.HIT;
         shotResult[coordinate.y()][coordinate.x()] = hit ? HIT : MISS;
-        if (difficulty == Difficulty.EASY || !hit) return;
+        if (!hit) return;
 
         currentHits.add(coordinate);
+
+        // Every difficulty learns where the wrecks are; only the hunt for the next one differs.
+        if (outcome.isSunkShip()) {
+            retireSunkShip(coordinate, outcome);
+            return;
+        }
+        if (difficulty == Difficulty.EASY) return;
 
         if ((difficulty == Difficulty.HARD || difficulty == Difficulty.NIGHTMARE
                 || difficulty == Difficulty.US_NAVY) && currentHits.size() >= 2) {
@@ -223,15 +238,44 @@ public class BattleshipAI {
         }
     }
 
-    public void markUnavailable(Collection<Coordinate> coordinates) {
-        for (Coordinate c : coordinates) {
-            attempted[c.y()][c.x()] = true;
+    /**
+     * A ship has gone down. Its own squares can never hold another ship, and because ships are
+     * not allowed to touch, neither can the water the board cleared around it. Forgetting either
+     * leaves the probability map piling shots onto wrecks it has already sunk.
+     */
+    private void retireSunkShip(Coordinate lastHit, AttackOutcome outcome) {
+        Set<Coordinate> shipTiles = connectedHits(lastHit);
+        for (Coordinate tile : shipTiles) {
+            shotResult[tile.y()][tile.x()] = SUNK;
+            attempted[tile.y()][tile.x()] = true;
         }
-        // Remove from remaining ship sizes (match by count of coordinates)
-        remainingShipSizes.remove(Integer.valueOf(coordinates.size()));
-
-        Set<Coordinate> sunk = new HashSet<>(coordinates);
-        currentHits.removeIf(sunk::contains);
+        for (Coordinate water : outcome.getClearedCoordinates()) {
+            shotResult[water.y()][water.x()] = MISS;
+            attempted[water.y()][water.x()] = true;
+        }
+        currentHits.removeAll(shipTiles);
+        if (outcome.getShipType() != null) {
+            remainingShipSizes.remove(Integer.valueOf(outcome.getShipType().getSize()));
+        }
         if (currentHits.size() < 2) direction = null;
+    }
+
+    /** The hits joined to {@code start} edge to edge, which is exactly one ship since ships never touch. */
+    private Set<Coordinate> connectedHits(Coordinate start) {
+        Set<Coordinate> hits = new HashSet<>(currentHits);
+        Set<Coordinate> found = new HashSet<>();
+        Deque<Coordinate> queue = new ArrayDeque<>();
+        found.add(start);
+        queue.add(start);
+        while (!queue.isEmpty()) {
+            Coordinate c = queue.poll();
+            for (int[] step : STEPS) {
+                Coordinate neighbour = new Coordinate(c.x() + step[1], c.y() + step[0]);
+                if (hits.contains(neighbour) && found.add(neighbour)) {
+                    queue.add(neighbour);
+                }
+            }
+        }
+        return found;
     }
 }
