@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class NetworkGameSession {
     public static final int DEFAULT_PORT = 50505;
@@ -24,7 +25,8 @@ public class NetworkGameSession {
     private volatile boolean host;
     private volatile boolean localReady;
     private volatile boolean remoteReady;
-    private volatile boolean started;
+    // The reader thread and the UI thread can both reach the start, so the flag has to be atomic.
+    private final AtomicBoolean started = new AtomicBoolean();
     private volatile boolean closed;
     private volatile String joinCode;
     private LanDiscovery lanDiscovery;
@@ -192,8 +194,7 @@ public class NetworkGameSession {
             return;
         }
         if ("TURN".equals(message)) {
-            if (!started) {
-                started = true;
+            if (started.compareAndSet(false, true)) {
                 dispatch(listener -> listener.onGameStart(true));
             } else {
                 dispatch(NetworkMessageListener::onTurnGranted);
@@ -232,8 +233,7 @@ public class NetworkGameSession {
     }
 
     private void attemptGameStart() {
-        if (host && localReady && remoteReady && !started) {
-            started = true;
+        if (host && localReady && remoteReady && started.compareAndSet(false, true)) {
             dispatch(listener -> listener.onGameStart(false));
             sendTurn();
         }

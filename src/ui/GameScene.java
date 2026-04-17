@@ -253,6 +253,11 @@ public class GameScene implements NetworkMessageListener {
         if (gameFinished) {
             return;
         }
+        // Nothing stops a peer sending coordinates off the grid, so check before indexing it.
+        if (!playerBoard.isInBounds(x, y)) {
+            finishGame("Connection Closed", "An illegal network move was detected.");
+            return;
+        }
         animateShot(playerButtons[y][x], () -> {
             AttackOutcome outcome = playerBoard.receiveAttack(x, y);
             if (outcome.getResult() == AttackResult.ALREADY_ATTACKED || outcome.getResult() == AttackResult.INVALID) {
