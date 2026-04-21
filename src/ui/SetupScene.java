@@ -344,7 +344,7 @@ public class SetupScene implements NetworkMessageListener {
             updateShipButtons();
             selectNextAvailableShip();
         } else {
-            statusLabel.setText("Invalid placement. Stay in bounds and avoid overlap.");
+            statusLabel.setText("Invalid placement. Ships must stay on the grid and cannot touch each other, not even at a corner.");
         }
     }
 
@@ -487,10 +487,10 @@ public class SetupScene implements NetworkMessageListener {
 
     private String getStartingStatusText() {
         return switch (gameMode) {
-            case SINGLEPLAYER -> "Select a ship, place it on the grid, and press Start Game.";
+            case SINGLEPLAYER -> "Select a ship, place it on the grid, and press Start Game. Ships cannot touch each other, not even diagonally.";
             case HOST -> "Starting server. Share your IP with another player.";
             case JOIN -> "Enter the host IP, connect, then place your ships.";
-            case LOCAL -> "Player " + playerNum + ": place all five ships, then press Done.";
+            case LOCAL -> "Player " + playerNum + ": place all five ships, then press Done. Ships cannot touch each other, not even diagonally.";
         };
     }
 

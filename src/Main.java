@@ -16,8 +16,7 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.scene.input.KeyCombination;
+import javafx.scene.input.KeyCode;
 import network.NetworkGameSession;
 import ui.EndScene;
 import ui.GameScene;
@@ -34,27 +33,17 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         stage = primaryStage;
-        stage.initStyle(StageStyle.UNDECORATED);
         audioManager = new AudioManager();
         stage.setTitle("Battleship");
         stage.setWidth(1600);
         stage.setHeight(900);
-        stage.setMinWidth(1280);
-        stage.setMinHeight(720);
-        stage.setResizable(true);
-        stage.setAlwaysOnTop(true);
-        stage.setFullScreenExitHint("");
-        stage.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
+        stage.setMinWidth(1100);
+        stage.setMinHeight(760);
+        stage.setFullScreenExitHint("Press F11 or Esc to leave fullscreen");
         loadWindowIcon();
         showMainMenu();
+        stage.setMaximized(true);
         stage.show();
-        stage.setFullScreen(true);
-        stage.toFront();
-        stage.focusedProperty().addListener((observable, oldValue, focused) -> {
-            if (focused) {
-                enforceFullscreen();
-            }
-        });
     }
 
     @Override
@@ -245,23 +234,14 @@ public class Main extends Application {
     }
 
     private void setScene(Scene scene) {
-        stage.setScene(scene);
-        Platform.runLater(this::enforceFullscreen);
-    }
-
-    private void enforceFullscreen() {
-        if (stage == null) {
-            return;
-        }
-        try {
-            stage.setAlwaysOnTop(true);
-            stage.setFullScreen(true);
-            stage.toFront();
-            if (stage.getScene() != null && stage.getScene().getRoot() != null) {
-                stage.getScene().getRoot().requestFocus();
+        // F11 toggles fullscreen and Esc leaves it. Nothing forces the window back on its own.
+        scene.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.F11) {
+                stage.setFullScreen(!stage.isFullScreen());
+                event.consume();
             }
-        } catch (RuntimeException ignored) {
-        }
+        });
+        stage.setScene(scene);
     }
 
     private void loadWindowIcon() {
