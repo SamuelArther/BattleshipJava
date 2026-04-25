@@ -1,0 +1,107 @@
+name: Build
+
+on:
+  push:
+    branches: ['**']
+    # Version tags are plain numbers now: 1.0, 1.7, 2.0.
+    tags: ['[0-9]*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Run the tests
+        run: ./gradlew test
+      - name: Keep the test report if something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report
+          path: build/reports/tests/test
+
+  package:
+    name: Package for ${{ matrix.label }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows
+          - os: macos-latest
+            label: macos-apple-silicon
+          - os: ubuntu-latest
+            label: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Work out the version number
+        id: version
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=1.0" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build the app with jpackage
+        shell: bash
+        run: ./gradlew packageApp -PappVersion=${{ steps.version.outputs.version }}
+
+      - name: Zip it (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path build/jpackage/Battleship -DestinationPath BattleshipJava-${{ steps.version.outputs.version }}-windows.zip
+
+      - name: Zip it (macOS)
+        if: runner.os == 'macOS'
+        run: ditto -c -k --keepParent build/jpackage/Battleship.app BattleshipJava-${{ steps.version.outputs.version }}-macos-apple-silicon.zip
+
+      - name: Tar it (Linux)
+        if: runner.os == 'Linux'
+        run: tar -C build/jpackage -czf BattleshipJava-${{ steps.version.outputs.version }}-linux.tar.gz Battleship
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BattleshipJava-${{ matrix.label }}
+          path: |
+            BattleshipJava-*.zip
+            BattleshipJava-*.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Publish the release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: List what will be attached
+        run: ls -la dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: BattleshipJava ${{ github.ref_name }}
+          files: dist/*
+          generate_release_notes: true
