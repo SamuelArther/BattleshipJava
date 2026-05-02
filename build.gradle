@@ -23,7 +23,7 @@ sourceSets {
 }
 
 application {
-    mainClass = 'Main'
+    mainClass = project.findProperty('mainClass') ?: 'Main'
 }
 
 javafx {
@@ -95,5 +95,20 @@ tasks.register('packageApp', Exec) {
             '--icon', file(icon).path,
             '--dest', outputDir.path
         ]
+    }
+}
+
+// Regenerates the screenshots used by the README, straight from the real scenes.
+// Output: docs/screenshots/*.png
+tasks.register('screenshots', JavaExec) {
+    group = 'documentation'
+    description = 'Renders every screen to docs/screenshots for the README.'
+    dependsOn tasks.classes
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'ScreenshotTool'
+    // The JavaFX plugin only patches the run task, so this one states its own module path.
+    doFirst {
+        def javafxJars = classpath.filter { it.name.startsWith('javafx-') }.asPath
+        jvmArgs = ['--module-path', javafxJars, '--add-modules', 'javafx.controls,javafx.media']
     }
 }

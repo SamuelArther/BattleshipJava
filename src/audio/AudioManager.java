@@ -1,5 +1,7 @@
 package audio;
 
+import settings.Settings;
+
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.util.Duration;
@@ -39,6 +41,11 @@ public class AudioManager {
     private MediaPlayer sirYesSirPlayer;
     private MediaPlayer internetPlayer;
     private MediaPlayer ballisticPlayer;
+    // The level each kind of sound is mixed at before the player's sliders are applied.
+    private static final double MENU_MUSIC_LEVEL = 0.45;
+    private static final double END_MUSIC_LEVEL = 0.65;
+    private static final double EFFECT_LEVEL = 0.8;
+
     private boolean audioAvailable = true;
 
     public AudioManager() {
@@ -86,7 +93,7 @@ public class AudioManager {
             try {
                 menuPlayer = new MediaPlayer(menuMedia);
                 menuPlayer.setCycleCount(MediaPlayer.INDEFINITE);
-                menuPlayer.setVolume(0.45);
+                menuPlayer.setVolume(Settings.get().musicLevel(MENU_MUSIC_LEVEL));
                 menuPlayer.setOnEndOfMedia(() -> {
                     try {
                         menuPlayer.seek(Duration.ZERO);
@@ -141,6 +148,17 @@ public class AudioManager {
         firePlayer = null;
     }
 
+    /** Re-applies the volume sliders to whatever is playing right now. */
+    public void refreshVolumes() {
+        Settings settings = Settings.get();
+        if (menuPlayer != null) {
+            menuPlayer.setVolume(settings.musicLevel(MENU_MUSIC_LEVEL));
+        }
+        if (endPlayer != null) {
+            endPlayer.setVolume(settings.musicLevel(END_MUSIC_LEVEL));
+        }
+    }
+
     public void dispose() {
         stopMenuMusic();
         stopEndMusic();
@@ -188,7 +206,7 @@ public class AudioManager {
         disposePlayer(existingPlayer);
         try {
             MediaPlayer player = new MediaPlayer(media);
-            player.setVolume(0.8);
+            player.setVolume(Settings.get().effectsLevel(EFFECT_LEVEL));
             player.setOnEndOfMedia(player::dispose);
             player.setOnError(() -> {
                 audioAvailable = false;
@@ -218,7 +236,7 @@ public class AudioManager {
         }
         try {
             endPlayer = new MediaPlayer(media);
-            endPlayer.setVolume(0.65);
+            endPlayer.setVolume(Settings.get().musicLevel(END_MUSIC_LEVEL));
             endPlayer.setOnEndOfMedia(() -> {
                 try {
                     endPlayer.stop();

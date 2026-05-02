@@ -145,7 +145,7 @@ public class GameScene implements NetworkMessageListener {
         statusLabel.setTextFill(Color.web("#d7e9ff"));
         statusLabel.setFont(Font.font("Georgia", 18));
 
-        VBox topBox = new VBox(8, title, statusLabel);
+        VBox topBox = new VBox(6, title, statusLabel);
         topBox.setPadding(new Insets(0, 0, 18, 0));
 
         playerSummaryLabel = createSummaryLabel();
@@ -160,16 +160,16 @@ public class GameScene implements NetworkMessageListener {
             "Your Grid",
             buildPlayerGrid(),
             UiFactory.createLegend(
-                "#90caf9|Your ship",
-                "#ff6b6b|Hit",
-                "#9aa5b1|Miss"
+                UiFactory.entry(UiFactory.TileStyle.SHIP, "Your ship"),
+                UiFactory.entry(UiFactory.TileStyle.HIT, "Hit"),
+                UiFactory.entry(UiFactory.TileStyle.MISS, "Miss")
             )
         );
         playerBox.getChildren().add(playerSummaryLabel);
         playerBox.getChildren().add(ballisticLabel);
 
         ballisticButton = new Button("USE BALLISTIC MISSILE");
-        ballisticButton.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-background-color: #8b0000; -fx-text-fill: white; -fx-border-color: #ff0000; -fx-border-width: 2;");
+        ballisticButton.getStyleClass().add("danger-button");
         ballisticButton.setVisible(false);
         ballisticButton.setOnAction(e -> {
             audioManager.playSelect();
@@ -183,9 +183,9 @@ public class GameScene implements NetworkMessageListener {
             "Enemy Grid",
             buildEnemyGrid(),
             UiFactory.createLegend(
-                "#b9d7ea|Unfired tile",
-                "#ff6b6b|Confirmed hit",
-                "#9aa5b1|Confirmed miss"
+                UiFactory.entry(UiFactory.TileStyle.WATER, "Unfired tile"),
+                UiFactory.entry(UiFactory.TileStyle.HIT, "Confirmed hit"),
+                UiFactory.entry(UiFactory.TileStyle.MISS, "Confirmed miss")
             )
         );
         enemyBox.getChildren().add(enemySummaryLabel);
@@ -197,21 +197,21 @@ public class GameScene implements NetworkMessageListener {
         fireButton = new Button("Fire!");
         fireButton.setPrefWidth(180);
         fireButton.setPrefHeight(48);
-        fireButton.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: #d62828; -fx-text-fill: white; -fx-border-color: #ffffff; -fx-border-width: 2;");
+        fireButton.getStyleClass().add("danger-button");
         fireButton.setManaged(false);
         fireButton.setVisible(false);
 
         passTurnButton = new Button("Pass Turn");
         passTurnButton.setPrefWidth(180);
         passTurnButton.setPrefHeight(48);
-        passTurnButton.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #1d6fa5; -fx-text-fill: white; -fx-border-color: #ffffff; -fx-border-width: 2;");
+        passTurnButton.getStyleClass().add("primary-button");
         passTurnButton.setOnAction(e -> passTurn());
 
-        VBox attackBox = new VBox(10, targetLabel, fireButton, passTurnButton);
+        VBox attackBox = new VBox(8, targetLabel, fireButton, passTurnButton);
         attackBox.setAlignment(Pos.CENTER);
         enemyBox.getChildren().add(attackBox);
 
-        HBox centerBox = new HBox(36, playerBox, enemyBox);
+        HBox centerBox = new HBox(30, playerBox, enemyBox);
         centerBox.setAlignment(Pos.TOP_CENTER);
 
         Button menuButton = UiFactory.createMenuButton("Main Menu", audioManager, () -> {
@@ -222,7 +222,7 @@ public class GameScene implements NetworkMessageListener {
         });
         VBox bottomBox = new VBox(12, menuButton);
         bottomBox.setAlignment(Pos.CENTER);
-        bottomBox.setPadding(new Insets(18, 0, 28, 0));
+        bottomBox.setPadding(new Insets(8, 0, 8, 0));
 
         layout.setTop(topBox);
         layout.setCenter(centerBox);
@@ -330,8 +330,8 @@ public class GameScene implements NetworkMessageListener {
 
     private GridPane buildPlayerGrid() {
         GridPane grid = new GridPane();
-        grid.setHgap(3);
-        grid.setVgap(3);
+        grid.setHgap(2);
+        grid.setVgap(2);
         grid.setAlignment(Pos.CENTER);
         for (int y = 0; y < Board.SIZE; y++) {
             for (int x = 0; x < Board.SIZE; x++) {
@@ -346,8 +346,8 @@ public class GameScene implements NetworkMessageListener {
 
     private GridPane buildEnemyGrid() {
         GridPane grid = new GridPane();
-        grid.setHgap(3);
-        grid.setVgap(3);
+        grid.setHgap(2);
+        grid.setVgap(2);
         grid.setAlignment(Pos.CENTER);
         for (int y = 0; y < Board.SIZE; y++) {
             for (int x = 0; x < Board.SIZE; x++) {
@@ -490,14 +490,14 @@ public class GameScene implements NetworkMessageListener {
                 Button button = playerButtons[y][x];
                 if (playerBoard.getTile(x, y).isAttacked()) {
                     if (playerBoard.getTile(x, y).hasShip()) {
-                        UiFactory.styleGridButton(button, "#ff6b6b", "X");
+                        UiFactory.styleGridButton(button, UiFactory.TileStyle.HIT, "X");
                     } else {
-                        UiFactory.styleGridButton(button, "#9aa5b1", "o");
+                        UiFactory.styleGridButton(button, UiFactory.TileStyle.MISS, "o");
                     }
                 } else if (playerBoard.getTile(x, y).hasShip() && shipsVisible) {
-                    UiFactory.styleGridButton(button, "#90caf9", "S");
+                    UiFactory.styleGridButton(button, UiFactory.TileStyle.SHIP, "S");
                 } else {
-                    UiFactory.styleGridButton(button, "#b9d7ea", "");
+                    UiFactory.styleGridButton(button, UiFactory.TileStyle.WATER, "");
                 }
             }
         }
@@ -508,14 +508,14 @@ public class GameScene implements NetworkMessageListener {
             for (int x = 0; x < Board.SIZE; x++) {
                 Button button = enemyButtons[y][x];
                 if (!enemyAttacked[y][x]) {
-                    UiFactory.styleGridButton(button, "#b9d7ea", "");
+                    UiFactory.styleGridButton(button, UiFactory.TileStyle.WATER, "");
                     if (x == selectedTargetX && y == selectedTargetY) {
                         UiFactory.styleSelectedTargetButton(button);
                     }
                 } else if (enemyHits[y][x]) {
-                    UiFactory.styleGridButton(button, "#ff6b6b", "X");
+                    UiFactory.styleGridButton(button, UiFactory.TileStyle.HIT, "X");
                 } else {
-                    UiFactory.styleGridButton(button, "#9aa5b1", "o");
+                    UiFactory.styleGridButton(button, UiFactory.TileStyle.MISS, "o");
                 }
             }
         }
@@ -525,7 +525,7 @@ public class GameScene implements NetworkMessageListener {
         int nextPlayer = currentPlayer == 1 ? 2 : 1;
 
         StackPane overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: #0b1f33;");
+        overlay.getStyleClass().add("turn-overlay");
         overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         StackPane.setAlignment(overlay, Pos.CENTER);
 
@@ -541,7 +541,7 @@ public class GameScene implements NetworkMessageListener {
         Button continueBtn = new Button("Continue");
         continueBtn.setPrefWidth(220);
         continueBtn.setPrefHeight(52);
-        continueBtn.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-background-color: #1d6fa5; -fx-text-fill: white; -fx-border-color: #f4fbff; -fx-border-width: 2;");
+        continueBtn.getStyleClass().add("primary-button");
         continueBtn.setOnAction(e -> {
             audioManager.playSelect();
             root.getChildren().remove(overlay);

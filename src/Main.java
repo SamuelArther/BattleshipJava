@@ -22,6 +22,12 @@ import ui.EndScene;
 import ui.GameScene;
 import ui.MainMenuScene;
 import ui.SetupScene;
+import ui.SettingsScene;
+import ui.UiFactory;
+import javafx.geometry.Rectangle2D;
+import javafx.stage.Screen;
+import javafx.stage.StageStyle;
+import settings.Settings;
 import ui.UiFactory;
 
 public class Main extends Application {
@@ -29,21 +35,74 @@ public class Main extends Application {
     private AudioManager audioManager;
     private SetupScene activeSetupScene;
     private Board localPlayer1Board;
+    private boolean stageIsBorderless;
 
     @Override
     public void start(Stage primaryStage) {
         stage = primaryStage;
         audioManager = new AudioManager();
-        stage.setTitle("Battleship");
-        stage.setWidth(1600);
-        stage.setHeight(900);
-        stage.setMinWidth(1100);
-        stage.setMinHeight(760);
-        stage.setFullScreenExitHint("Press F11 or Esc to leave fullscreen");
-        loadWindowIcon();
+        configureStage(stage);
         showMainMenu();
-        stage.setMaximized(true);
+        applyDisplaySettings();
         stage.show();
+    }
+
+    private void configureStage(Stage target) {
+        target.setTitle("Battleship");
+        target.setMinWidth(1100);
+        target.setMinHeight(760);
+        target.setFullScreenExitHint("Press F11 or Esc to leave fullscreen");
+        loadWindowIcon(target);
+    }
+
+    /**
+     * Puts the window into whatever the player chose in Settings.
+     *
+     * Borderless needs an undecorated stage, and JavaFX only lets a stage's style be set
+     * before it is first shown, so switching in or out of borderless builds a fresh stage and
+     * moves the current scene across.
+     */
+    private void applyDisplaySettings() {
+        Settings settings = Settings.get();
+        boolean wantBorderless = settings.getDisplayMode() == Settings.DisplayMode.BORDERLESS;
+        if (wantBorderless != stageIsBorderless) {
+            rebuildStage(wantBorderless);
+        }
+        switch (settings.getDisplayMode()) {
+            case WINDOWED -> {
+                stage.setFullScreen(false);
+                stage.setWidth(settings.getWindowWidth());
+                stage.setHeight(settings.getWindowHeight());
+                stage.centerOnScreen();
+            }
+            case BORDERLESS -> {
+                stage.setFullScreen(false);
+                Rectangle2D bounds = Screen.getPrimary().getBounds();
+                stage.setX(bounds.getMinX());
+                stage.setY(bounds.getMinY());
+                stage.setWidth(bounds.getWidth());
+                stage.setHeight(bounds.getHeight());
+            }
+            case FULLSCREEN -> stage.setFullScreen(true);
+        }
+    }
+
+    private void rebuildStage(boolean borderless) {
+        Stage replacement = new Stage();
+        if (borderless) {
+            replacement.initStyle(StageStyle.UNDECORATED);
+        }
+        configureStage(replacement);
+        Stage previous = stage;
+        Scene scene = previous.getScene();
+        if (scene != null) {
+            previous.setScene(null);
+            replacement.setScene(scene);
+        }
+        stage = replacement;
+        stageIsBorderless = borderless;
+        replacement.show();
+        previous.close();
     }
 
     @Override
@@ -69,6 +128,7 @@ public class Main extends Application {
             () -> showLocalSetup(1),
             () -> showNetworkSetupIfOnline(GameMode.HOST),
             () -> showNetworkSetupIfOnline(GameMode.JOIN),
+            this::showSettings,
             Platform::exit
         );
         setScene(mainMenuScene.createScene());
@@ -131,15 +191,17 @@ public class Main extends Application {
         okBtn.setFont(javafx.scene.text.Font.font("Segoe UI", javafx.scene.text.FontWeight.BOLD, 14));
         okBtn.setMinWidth(120);
         okBtn.setDefaultButton(true);
-        okBtn.setStyle("-fx-background-color:#1565c0;-fx-text-fill:white;-fx-padding:8 28;-fx-cursor:hand;");
+        okBtn.getStyleClass().add("primary-button");
         okBtn.setOnAction(e -> popup.close());
 
         VBox root = new VBox(16, header, msg, okBtn);
         root.setPadding(new javafx.geometry.Insets(28));
         root.setAlignment(javafx.geometry.Pos.CENTER);
-        root.setStyle("-fx-background-color:#0b1f33;");
+        root.getStyleClass().add("alert-panel");
 
-        popup.setScene(new Scene(root));
+        Scene popupScene = new Scene(root);
+        UiFactory.applyTheme(popupScene);
+        popup.setScene(popupScene);
         popup.showAndWait();
     }
 
@@ -234,6 +296,7 @@ public class Main extends Application {
     }
 
     private void setScene(Scene scene) {
+        UiFactory.applyTheme(scene);
         // F11 toggles fullscreen and Esc leaves it. Nothing forces the window back on its own.
         scene.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.F11) {
@@ -244,11 +307,15 @@ public class Main extends Application {
         stage.setScene(scene);
     }
 
-    private void loadWindowIcon() {
+    private void showSettings() {
+        setScene(new SettingsScene(audioManager, this::showMainMenu, this::applyDisplaySettings).createScene());
+    }
+
+    private void loadWindowIcon(Stage target) {
         try {
             java.net.URL iconUrl = getClass().getResource("/icon/icon.jpg");
             if (iconUrl != null) {
-                stage.getIcons().add(new Image(iconUrl.toExternalForm()));
+                target.getIcons().add(new Image(iconUrl.toExternalForm()));
             }
         } catch (RuntimeException ignored) {
         }

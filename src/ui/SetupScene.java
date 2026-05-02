@@ -101,8 +101,8 @@ public class SetupScene implements NetworkMessageListener {
         statusLabel.setWrapText(true);
         statusLabel.setMaxWidth(900);
 
-        VBox topBox = new VBox(10, title, buildModeHeader(), statusLabel);
-        topBox.setPadding(new Insets(0, 0, 18, 0));
+        VBox topBox = new VBox(6, title, buildModeHeader(), statusLabel);
+        topBox.setPadding(new Insets(0, 0, 10, 0));
 
         GridPane placementGrid = new GridPane();
         placementGrid.setHgap(3);
@@ -123,8 +123,8 @@ public class SetupScene implements NetworkMessageListener {
             "Placement Grid",
             placementGrid,
             UiFactory.createLegend(
-                "#90caf9|Placed ship tile",
-                "#b9d7ea|Open water"
+                UiFactory.entry(UiFactory.TileStyle.SHIP, "Placed ship tile"),
+                UiFactory.entry(UiFactory.TileStyle.WATER, "Open water")
             )
         );
 
@@ -211,10 +211,11 @@ public class SetupScene implements NetworkMessageListener {
         shipsLabel.setTextFill(Color.web("#f4fbff"));
         shipsLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 22));
 
-        VBox shipsBox = new VBox(10);
+        VBox shipsBox = new VBox(6);
         for (ShipType shipType : ShipType.values()) {
             Button button = UiFactory.createMenuButton(shipType.getDisplayName() + " (" + shipType.getSize() + ")", audioManager, () -> selectShip(shipType));
             button.setPrefWidth(260);
+            button.setPrefHeight(38);
             shipButtons.put(shipType, button);
             shipsBox.getChildren().add(button);
         }
@@ -237,7 +238,7 @@ public class SetupScene implements NetworkMessageListener {
             backAction.run();
         });
 
-        VBox sidePanel = new VBox(14, shipsLabel, shipsBox, selectedShipLabel, orientationLabel, rotateButton, randomButton, clearButton);
+        VBox sidePanel = new VBox(9, shipsLabel, shipsBox, selectedShipLabel, orientationLabel, rotateButton, randomButton, clearButton);
 
         if (gameMode == GameMode.SINGLEPLAYER) {
             Label difficultyLabel = new Label("AI Difficulty");
@@ -282,7 +283,7 @@ public class SetupScene implements NetworkMessageListener {
             codeField = new TextField();
             codeField.setPromptText("ABCDEF");
             codeField.setPrefWidth(130);
-            codeField.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-transform: uppercase;");
+            codeField.getStyleClass().add("code-field");
             codeField.textProperty().addListener((obs, oldVal, newVal) -> {
                 if (newVal != null) {
                     String upper = newVal.toUpperCase().replaceAll("[^A-Z0-9]", "");
@@ -434,9 +435,9 @@ public class SetupScene implements NetworkMessageListener {
             for (int x = 0; x < Board.SIZE; x++) {
                 Button button = gridButtons[y][x];
                 if (board.getTile(x, y).hasShip()) {
-                    UiFactory.styleGridButton(button, "#90caf9", board.getTile(x, y).getShip().getType().name().substring(0, 1));
+                    UiFactory.styleGridButton(button, UiFactory.TileStyle.SHIP, board.getTile(x, y).getShip().getType().name().substring(0, 1));
                 } else {
-                    UiFactory.styleGridButton(button, "#b9d7ea", "");
+                    UiFactory.styleGridButton(button, UiFactory.TileStyle.WATER, "");
                 }
             }
         }
@@ -447,12 +448,11 @@ public class SetupScene implements NetworkMessageListener {
             Button button = shipButtons.get(shipType);
             boolean placed = board.isShipPlaced(shipType);
             button.setDisable(placed);
-            if (shipType == selectedShip && !placed) {
-                button.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #ffd166; -fx-text-fill: #0b1f33;");
-            } else if (placed) {
-                button.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #6fb98f; -fx-text-fill: #0b1f33;");
-            } else {
-                button.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-background-color: #d7e9ff; -fx-text-fill: #0b1f33;");
+            button.getStyleClass().removeAll("ready-button", "pending-button");
+            if (placed) {
+                button.getStyleClass().add("ready-button");
+            } else if (shipType == selectedShip) {
+                button.getStyleClass().add("pending-button");
             }
         }
     }

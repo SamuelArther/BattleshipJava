@@ -25,14 +25,16 @@ public class MainMenuScene {
     private final Runnable localAction;
     private final Runnable hostAction;
     private final Runnable joinAction;
+    private final Runnable settingsAction;
     private final Runnable exitAction;
 
-    public MainMenuScene(AudioManager audioManager, Runnable playAiAction, Runnable localAction, Runnable hostAction, Runnable joinAction, Runnable exitAction) {
+    public MainMenuScene(AudioManager audioManager, Runnable playAiAction, Runnable localAction, Runnable hostAction, Runnable joinAction, Runnable settingsAction, Runnable exitAction) {
         this.audioManager = audioManager;
         this.playAiAction = playAiAction;
         this.localAction = localAction;
         this.hostAction = hostAction;
         this.joinAction = joinAction;
+        this.settingsAction = settingsAction;
         this.exitAction = exitAction;
     }
 
@@ -41,19 +43,21 @@ public class MainMenuScene {
 
         ImageView shipGraphic = createShipGraphic();
 
-        Label title = new Label("Battleship");
-        title.setTextFill(Color.web("#f4fbff"));
-        title.setFont(Font.font("Georgia", FontWeight.BOLD, 40));
+        Label title = UiFactory.createScreenTitle("Battleship");
 
-        VBox brandBox = new VBox(6, shipGraphic, title);
+        Label tagline = new Label("Place your fleet, read the water, and sink theirs first.");
+        tagline.getStyleClass().add("muted-text");
+
+        VBox brandBox = new VBox(2, shipGraphic, title, tagline);
         brandBox.setAlignment(Pos.CENTER);
 
-        VBox content = new VBox(18,
+        VBox content = new VBox(14,
             brandBox,
             UiFactory.createMenuButton("Play vs AI", audioManager, playAiAction),
             UiFactory.createMenuButton("Local Multiplayer", audioManager, localAction),
             UiFactory.createMenuButton("Host Game", audioManager, hostAction),
             UiFactory.createMenuButton("Join Game", audioManager, joinAction),
+            UiFactory.createMenuButton("Settings", audioManager, settingsAction),
             UiFactory.createMenuButton("Quit Battleship", audioManager, exitAction)
         );
         content.setAlignment(Pos.CENTER);

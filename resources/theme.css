@@ -1,0 +1,268 @@
+/*
+ * BattleshipJava theme.
+ *
+ * Everything visual lives here so the scene classes can stay about the game.
+ * The look is a lit chart table in a darkened room: deep ocean behind, brass
+ * on the things you act on, and a board that stays legible above all of it.
+ */
+
+.root {
+    -fx-font-family: "Segoe UI", "Helvetica Neue", "DejaVu Sans", sans-serif;
+
+    /* Palette */
+    ink-deep:     #040c16;
+    ink:          #0a1a2b;
+    ink-raised:   #12293f;
+
+    parchment:    #eaf4ff;
+    muted:        #9db4ca;
+
+    brass:        #e0b25a;
+    brass-bright: #f6d494;
+    brass-deep:   #a97c2c;
+
+    danger:       #e5484d;
+    danger-deep:  #7f1d1f;
+
+    tile-water:   #a9c9e1;
+    tile-ship:    #79aee6;
+    tile-hit:     #e8555c;
+    tile-miss:    #7c8a99;
+}
+
+/* Screen */
+
+.root-pane {
+    -fx-background-color:
+        radial-gradient(center 50% 0%, radius 120%, #17364f 0%, ink-deep 70%),
+        linear-gradient(to bottom, ink 0%, ink-deep 100%);
+}
+
+/* Type */
+
+.screen-title {
+    -fx-font-family: "Georgia", "Times New Roman", serif;
+    -fx-font-size: 46px;
+    -fx-font-weight: bold;
+    -fx-text-fill: linear-gradient(to bottom, brass-bright 0%, brass 55%, brass-deep 100%);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.75), 14, 0.0, 0, 3);
+}
+
+.section-title {
+    -fx-font-family: "Georgia", "Times New Roman", serif;
+    -fx-font-size: 21px;
+    -fx-font-weight: bold;
+    -fx-text-fill: parchment;
+}
+
+.body-text   { -fx-text-fill: parchment; -fx-font-size: 14px; }
+.muted-text  { -fx-text-fill: muted;     -fx-font-size: 13px; }
+
+.status-text {
+    -fx-text-fill: parchment;
+    -fx-font-size: 15px;
+}
+
+.axis-label {
+    -fx-font-family: "Georgia", "Times New Roman", serif;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: derive(brass, -8%);
+}
+
+/* Panels */
+
+.panel {
+    -fx-background-color:
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.025) 100%);
+    -fx-background-radius: 16;
+    -fx-border-radius: 16;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(160, 205, 245, 0.20);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 22, 0.0, 0, 8);
+}
+
+.board-frame {
+    -fx-background-color: linear-gradient(to bottom, rgba(11, 34, 54, 0.72), rgba(4, 14, 24, 0.82));
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-width: 2;
+    -fx-border-color: linear-gradient(to bottom, rgba(224, 178, 90, 0.85), rgba(169, 124, 44, 0.45));
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.65), 26, 0.0, 0, 10);
+}
+
+/* Buttons */
+
+.menu-button {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: ink;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(255, 245, 220, 0.55);
+    -fx-background-color: linear-gradient(to bottom, #f3f8ff 0%, #c7dcf1 100%);
+    -fx-padding: 10 22 10 22;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 10, 0.0, 0, 4);
+}
+.menu-button:hover {
+    -fx-background-color: linear-gradient(to bottom, brass-bright 0%, brass 100%);
+    -fx-border-color: brass-bright;
+    -fx-effect: dropshadow(gaussian, rgba(224, 178, 90, 0.55), 18, 0.15, 0, 5);
+}
+.menu-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, brass 0%, brass-deep 100%);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.5), 6, 0.0, 0, 1);
+}
+.menu-button:disabled { -fx-opacity: 0.72; -fx-cursor: default; }
+
+.primary-button {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: ink;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-border-color: brass-bright;
+    -fx-background-color: linear-gradient(to bottom, brass-bright 0%, brass 100%);
+    -fx-padding: 10 24 10 24;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(224, 178, 90, 0.45), 16, 0.1, 0, 5);
+}
+.primary-button:hover   { -fx-background-color: linear-gradient(to bottom, #fde3ad 0%, brass-bright 100%); }
+.primary-button:pressed { -fx-background-color: linear-gradient(to bottom, brass 0%, brass-deep 100%); }
+.primary-button:disabled { -fx-opacity: 0.45; -fx-cursor: default; }
+
+.danger-button {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #fff3f3;
+    -fx-background-radius: 10;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(255, 140, 140, 0.75);
+    -fx-background-color: linear-gradient(to bottom, danger 0%, danger-deep 100%);
+    -fx-padding: 10 22 10 22;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(229, 72, 77, 0.5), 18, 0.15, 0, 5);
+}
+.danger-button:hover    { -fx-background-color: linear-gradient(to bottom, #f2686d 0%, #9c2427 100%); }
+.danger-button:pressed  { -fx-background-color: linear-gradient(to bottom, danger-deep 0%, #5c1416 100%); }
+.danger-button:disabled { -fx-opacity: 0.5; -fx-cursor: default; }
+
+.ready-button   { -fx-background-color: linear-gradient(to bottom, #7fd6aa 0%, #3f9a72 100%); -fx-border-color: #a9edcb; }
+.pending-button { -fx-background-color: linear-gradient(to bottom, brass-bright 0%, brass 100%); -fx-border-color: brass-bright; }
+
+/* Board tiles */
+
+.grid-tile {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: ink;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(6, 18, 32, 0.55);
+    -fx-padding: 0;
+}
+
+.tile-water { -fx-background-color: linear-gradient(to bottom, derive(tile-water, 22%), tile-water); }
+.tile-ship  { -fx-background-color: linear-gradient(to bottom, derive(tile-ship, 26%), tile-ship);
+              -fx-border-color: rgba(6, 18, 32, 0.75); }
+.tile-hit   { -fx-background-color: linear-gradient(to bottom, derive(tile-hit, 24%), tile-hit);
+              -fx-text-fill: #fff0f0;
+              -fx-effect: dropshadow(gaussian, rgba(229, 72, 77, 0.75), 9, 0.25, 0, 0); }
+.tile-miss  { -fx-background-color: linear-gradient(to bottom, derive(tile-miss, 18%), tile-miss);
+              -fx-text-fill: rgba(255, 255, 255, 0.8); }
+
+/* Only a tile you can actually fire at reacts to the pointer. */
+.grid-tile:hover:enabled {
+    -fx-border-color: brass-bright;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(246, 212, 148, 0.9), 11, 0.3, 0, 0);
+}
+.grid-tile:disabled { -fx-opacity: 1.0; }
+
+.legend-swatch {
+    -fx-min-width: 18; -fx-min-height: 18;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(6, 18, 32, 0.6);
+}
+
+/* Controls */
+
+.text-field {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-text-fill: parchment;
+    -fx-prompt-text-fill: muted;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(160, 205, 245, 0.28);
+    -fx-padding: 8 12 8 12;
+}
+.text-field:focused { -fx-border-color: brass; }
+
+.code-field {
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+.combo-box {
+    -fx-background-color: rgba(255, 255, 255, 0.08);
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(160, 205, 245, 0.28);
+}
+.combo-box .list-cell { -fx-text-fill: parchment; -fx-background-color: transparent; -fx-padding: 6 10 6 10; }
+.combo-box:hover { -fx-border-color: brass; }
+.combo-box-popup .list-view { -fx-background-color: ink-raised; -fx-border-color: rgba(160, 205, 245, 0.28); }
+.combo-box-popup .list-view .list-cell { -fx-text-fill: parchment; -fx-background-color: ink-raised; }
+.combo-box-popup .list-view .list-cell:hover,
+.combo-box-popup .list-view .list-cell:filled:selected {
+    -fx-background-color: brass; -fx-text-fill: ink;
+}
+
+.scroll-pane, .scroll-pane .viewport { -fx-background-color: transparent; }
+
+/* Overlays */
+
+.turn-overlay {
+    -fx-background-color: linear-gradient(to bottom, rgba(4, 12, 22, 0.97), rgba(10, 26, 43, 0.97));
+}
+
+.alert-panel {
+    -fx-background-color: linear-gradient(to bottom, ink-raised, ink);
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(160, 205, 245, 0.25);
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 26, 0.0, 0, 10);
+}
+
+/* The square the player has picked out but not yet fired at. */
+.tile-target {
+    -fx-border-color: danger;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(229, 72, 77, 0.95), 12, 0.35, 0, 0);
+}
+
+/* Sliders in the settings screen */
+.slider .track {
+    -fx-background-color: rgba(255, 255, 255, 0.13);
+    -fx-background-radius: 5;
+    -fx-pref-height: 7;
+}
+.slider .thumb {
+    -fx-background-color: linear-gradient(to bottom, brass-bright, brass);
+    -fx-background-radius: 12;
+    -fx-pref-width: 19;
+    -fx-pref-height: 19;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 7, 0.0, 0, 2);
+}
+.slider .thumb:hover { -fx-background-color: brass-bright; }
