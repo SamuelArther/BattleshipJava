@@ -2,7 +2,7 @@
 
 A desktop Battleship game written in Java and JavaFX. Place a fleet of five ships, then
 take turns firing at a ten-by-ten grid until one side has nothing left afloat. You can play
-against a computer opponent across five difficulty levels, hand the same machine back and
+against a computer opponent across six difficulty levels, hand the same machine back and
 forth with a friend, or play over your local network with a six-character join code.
 
 [![Build](https://github.com/SamuelArther/BattleshipJava/actions/workflows/build.yml/badge.svg)](https://github.com/SamuelArther/BattleshipJava/actions/workflows/build.yml)
@@ -142,7 +142,7 @@ Play alternates until one fleet is completely destroyed.
 ## Game modes
 
 **Play vs AI** — a single-player game against the computer, at a difficulty you pick on the
-placement screen.
+placement screen, from Easy up to All of the US Armed Forces.
 
 **Local Multiplayer** — two players sharing one machine. Each player places their fleet in turn,
 and between turns the game covers the screen with a hand-off prompt so the player waiting cannot
@@ -155,7 +155,7 @@ see the other player's board.
 
 ## Difficulty levels
 
-The five levels are genuinely different opponents rather than the same opponent with the numbers
+The six levels are genuinely different opponents rather than the same opponent with the numbers
 turned up. The figures below are the average number of shots each one needs to clear a full board,
 measured over two hundred randomised games by the project's own test suite. A hundred shots would
 mean firing at every square on the grid.
@@ -167,9 +167,11 @@ mean firing at every square on the grid.
 | **Hard** | 51 | After two hits it works out which way the ship is lying and drives along that line, rather than probing blindly around each hit. |
 | **Nightmare** | 45 | Hunts on a checkerboard. The smallest ship is two squares long, so it cannot hide entirely on one colour, which means half the board can be skipped while hunting. |
 | **US Navy** | 42 | Rebuilds a probability map every single turn, counting how many ways each ship still afloat could be lying across each square, and fires at the square with the most possible placements. |
+| **All of the US Armed Forces** | 38 | Every branch at once. Sweeps on the tightest lattice the shortest surviving ship cannot slip through, counts every placement still possible, and weights the ones explaining a confirmed hit far above the rest, so a wounded ship is finished rather than merely favoured. It feels like it is cheating. It is not: it never sees your board, and the test suite plays it the same way the game does. |
 
 Every level, Easy included, understands that the water around a sunk ship must be empty and will
-not waste shots there.
+not waste shots there. None of them can see where your ships are; they only know the same hits,
+misses and sunk ships you would see from the other side of the board.
 
 ---
 

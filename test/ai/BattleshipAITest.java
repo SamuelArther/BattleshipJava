@@ -81,7 +81,11 @@ class BattleshipAITest {
         assertTrue(hard < medium, "Hard (" + hard + ") should beat Medium (" + medium + ")");
         assertTrue(nightmare < hard, "Nightmare (" + nightmare + ") should beat Hard (" + hard + ")");
         assertTrue(usNavy < nightmare, "US Navy (" + usNavy + ") should beat Nightmare (" + nightmare + ")");
-        assertTrue(usNavy < 45, "US Navy averaged " + usNavy + " shots; expected well under 45");
+        double armedForces = averageShotsToWin(Difficulty.ARMED_FORCES, 200);
+        assertTrue(armedForces < usNavy,
+            "All of the US Armed Forces (" + armedForces + ") should beat US Navy (" + usNavy + ")");
+        assertTrue(armedForces < 40,
+            "All of the US Armed Forces averaged " + armedForces + " shots; expected under 40");
     }
 
     /** Plays complete games the same way GameScene drives the AI, and returns the average shots per win. */

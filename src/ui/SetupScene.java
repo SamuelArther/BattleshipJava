@@ -245,7 +245,8 @@ public class SetupScene implements NetworkMessageListener {
             difficultyLabel.setTextFill(Color.web("#f4fbff"));
             difficultyLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 18));
             difficultyComboBox = new ComboBox<>();
-            difficultyComboBox.getItems().addAll(Difficulty.EASY, Difficulty.MEDIUM, Difficulty.HARD, Difficulty.NIGHTMARE, Difficulty.US_NAVY);
+            // Straight from the enum, so a new difficulty cannot be added and then go missing here.
+            difficultyComboBox.getItems().addAll(Difficulty.values());
             difficultyComboBox.getSelectionModel().select(Difficulty.MEDIUM);
             difficultyComboBox.setPrefWidth(260);
             difficultyDescriptionLabel = new Label();

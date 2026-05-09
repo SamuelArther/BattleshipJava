@@ -49,7 +49,7 @@ public class BattleshipAI {
             return markAttempted(randomUnshot());
         }
 
-        if (difficulty == Difficulty.US_NAVY) {
+        if (difficulty == Difficulty.US_NAVY || difficulty == Difficulty.ARMED_FORCES) {
             return markAttempted(probabilityShot());
         }
 
@@ -97,35 +97,71 @@ public class BattleshipAI {
         return anyAdjacentUnshot();
     }
 
-    // ── US Navy probability density map ────────────────────────────────────────
+    // ── Probability density map (US Navy and All of the US Armed Forces) ────────
 
+    /**
+     * Counts, for every square, how many ways the ships still afloat could be lying across it,
+     * and fires at the square that shows up in the most of them.
+     *
+     * All of the US Armed Forces adds two things on top of that count, neither of which needs
+     * any knowledge of where the ships actually are. Placements lining up with squares already
+     * hit are weighted far above the rest, so a confirmed hit is pursued to the end instead of
+     * merely nudging the odds. And with no hit outstanding it only sweeps squares on the
+     * tightest diagonal lattice that the shortest surviving ship cannot fit through, which
+     * throws away the squares that could not possibly finish the hunt any sooner.
+     */
     private Coordinate probabilityShot() {
-        int[][] prob = new int[Board.SIZE][Board.SIZE];
+        boolean relentless = difficulty == Difficulty.ARMED_FORCES;
+        long[][] prob = new long[Board.SIZE][Board.SIZE];
 
         for (int shipSize : remainingShipSizes) {
-            // Horizontal placements
             for (int y = 0; y < Board.SIZE; y++) {
                 for (int x = 0; x <= Board.SIZE - shipSize; x++) {
-                    if (!placementValid(y, x, 0, 1, shipSize)) continue;
-                    if (!currentHits.isEmpty() && !placementCoversHit(y, x, 0, 1, shipSize)) continue;
-                    for (int i = 0; i < shipSize; i++) prob[y][x + i]++;
+                    score(prob, y, x, 0, 1, shipSize, relentless);
                 }
             }
-            // Vertical placements
             for (int y = 0; y <= Board.SIZE - shipSize; y++) {
                 for (int x = 0; x < Board.SIZE; x++) {
-                    if (!placementValid(y, x, 1, 0, shipSize)) continue;
-                    if (!currentHits.isEmpty() && !placementCoversHit(y, x, 1, 0, shipSize)) continue;
-                    for (int i = 0; i < shipSize; i++) prob[y + i][x]++;
+                    score(prob, y, x, 1, 0, shipSize, relentless);
                 }
             }
         }
 
+        boolean hunting = currentHits.isEmpty();
+        int stride = relentless && hunting ? shortestRemainingShip() : 1;
+
+        List<Coordinate> best = pick(prob, stride);
+        if (best.isEmpty() && stride > 1) {
+            best = pick(prob, 1); // The lattice can run out before the board does.
+        }
+        return best.isEmpty() ? randomUnshot() : best.get(random.nextInt(best.size()));
+    }
+
+    /** Adds one placement's contribution to the map, if that placement is still possible. */
+    private void score(long[][] prob, int y, int x, int dy, int dx, int size, boolean weighted) {
+        if (!placementValid(y, x, dy, dx, size)) return;
+        int covered = hitsCovered(y, x, dy, dx, size);
+        if (!currentHits.isEmpty() && covered == 0) return;
+
+        // Four times the weight per confirmed hit the placement explains.
+        long weight = weighted ? 1L << (2 * covered) : 1L;
+        for (int i = 0; i < size; i++) {
+            int cy = y + i * dy;
+            int cx = x + i * dx;
+            if (!attempted[cy][cx]) {
+                prob[cy][cx] += weight;
+            }
+        }
+    }
+
+    private List<Coordinate> pick(long[][] prob, int stride) {
         List<Coordinate> best = new ArrayList<>();
-        int bestScore = -1;
+        long bestScore = -1;
         for (int y = 0; y < Board.SIZE; y++) {
             for (int x = 0; x < Board.SIZE; x++) {
-                if (attempted[y][x] || prob[y][x] < bestScore) continue;
+                if (attempted[y][x] || prob[y][x] == 0) continue;
+                if (stride > 1 && (x + y) % stride != 0) continue;
+                if (prob[y][x] < bestScore) continue;
                 if (prob[y][x] > bestScore) {
                     bestScore = prob[y][x];
                     best.clear();
@@ -133,7 +169,28 @@ public class BattleshipAI {
                 best.add(new Coordinate(x, y));
             }
         }
-        return best.isEmpty() ? randomUnshot() : best.get(random.nextInt(best.size()));
+        return best;
+    }
+
+    private int shortestRemainingShip() {
+        int shortest = Board.SIZE;
+        for (int size : remainingShipSizes) {
+            shortest = Math.min(shortest, size);
+        }
+        return Math.max(1, shortest);
+    }
+
+    private int hitsCovered(int y, int x, int dy, int dx, int size) {
+        int covered = 0;
+        for (Coordinate hit : currentHits) {
+            for (int i = 0; i < size; i++) {
+                if (hit.y() == y + i * dy && hit.x() == x + i * dx) {
+                    covered++;
+                    break;
+                }
+            }
+        }
+        return covered;
     }
 
     // Returns true if a placement starting at (y,x) in direction (dy,dx) contains no 'miss' cells
@@ -145,15 +202,6 @@ public class BattleshipAI {
         return true;
     }
 
-    // Returns true if the placement covers at least one cell in currentHits
-    private boolean placementCoversHit(int y, int x, int dy, int dx, int size) {
-        for (Coordinate h : currentHits) {
-            for (int i = 0; i < size; i++) {
-                if (h.y() == y + i * dy && h.x() == x + i * dx) return true;
-            }
-        }
-        return false;
-    }
 
     // ── Direction helpers ───────────────────────────────────────────────────────
 
@@ -229,7 +277,7 @@ public class BattleshipAI {
         if (difficulty == Difficulty.EASY) return;
 
         if ((difficulty == Difficulty.HARD || difficulty == Difficulty.NIGHTMARE
-                || difficulty == Difficulty.US_NAVY) && currentHits.size() >= 2) {
+                || difficulty == Difficulty.US_NAVY || difficulty == Difficulty.ARMED_FORCES) && currentHits.size() >= 2) {
             Coordinate first = currentHits.get(0);
             Coordinate last  = currentHits.get(currentHits.size() - 1);
             int dr = Integer.signum(last.y() - first.y());
