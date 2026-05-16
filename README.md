@@ -24,6 +24,7 @@ install Java to play.
 - [Playing over a local network](#playing-over-a-local-network)
 - [Settings](#settings)
 - [Controls](#controls)
+- [The party](#the-party)
 - [Building from source](#building-from-source)
 - [How the project is laid out](#how-the-project-is-laid-out)
 - [Licence](#licence)
@@ -232,6 +233,20 @@ the level you are setting.
 | **R** | Rotate the selected ship |
 | **F11** | Toggle fullscreen |
 | **Esc** | Leave fullscreen |
+| **F8** | Throw a party. Press it again to end one early. |
+
+---
+
+## The party
+
+Press **F8** anywhere in the game.
+
+The lights come up over whatever screen you are on, the music starts, and when the track runs
+out the lights fade and everything goes back to exactly how it was, including the menu music if
+that was playing when you started. The overlay never takes the mouse, so a game underneath stays
+playable the entire time. Press F8 again to send everyone home early.
+
+![Party mode](docs/screenshots/party.png)
 
 ---
 

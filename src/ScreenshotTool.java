@@ -108,6 +108,21 @@ public class ScreenshotTool extends Application {
             "Every enemy ship is on the bottom. The fleet is yours.", noop(), noop()).createScene());
         after(1.2, () -> {
             capture("victory.png");
+            captureParty();
+        });
+    }
+
+    private void captureParty() {
+        Scene menu = new MainMenuScene(audioManager, noop(), noop(), noop(), noop(), noop(), noop()).createScene();
+        show(menu);
+        ui.PartyMode party = new ui.PartyMode(audioManager);
+        if (menu.getRoot() instanceof javafx.scene.layout.Pane root) {
+            party.start(root);
+        }
+        // Long enough for the lights to spread out across the screen.
+        after(3.5, () -> {
+            capture("party.png");
+            party.stop();
             audioManager.dispose();
             Platform.exit();
         });

@@ -33,8 +33,11 @@ public class AudioManager {
     private Media menuMedia;
     private Media victoryMedia;
     private Media lossMedia;
+    private Media partyMedia;
     private MediaPlayer menuPlayer;
     private MediaPlayer endPlayer;
+    private MediaPlayer partyPlayer;
+    private boolean menuMusicInterruptedByParty;
     private MediaPlayer firePlayer;
     private MediaPlayer explosionPlayer;
     private MediaPlayer selectPlayer;
@@ -45,6 +48,7 @@ public class AudioManager {
     private static final double MENU_MUSIC_LEVEL = 0.45;
     private static final double END_MUSIC_LEVEL = 0.65;
     private static final double EFFECT_LEVEL = 0.8;
+    private static final double PARTY_LEVEL = 0.9;
 
     private boolean audioAvailable = true;
 
@@ -55,6 +59,7 @@ public class AudioManager {
         menuMedia = loadMedia("/audio/menu.mp3");
         victoryMedia = loadMedia("/music/victory.mp3");
         lossMedia = loadMedia("/music/loss.mp3");
+        partyMedia = loadMedia("/music/everybodydotheflop.mp3");
     }
 
     public void playFire() {
@@ -148,6 +153,53 @@ public class AudioManager {
         firePlayer = null;
     }
 
+    /**
+     * Throws the party: stops whatever music is going, plays the track, and calls back when it
+     * ends so the lights can be taken down. Menu music, if it was playing, is put back afterwards.
+     */
+    public void playParty(Runnable onFinished) {
+        stopParty();
+        if (!audioAvailable || partyMedia == null) {
+            return;
+        }
+        menuMusicInterruptedByParty = menuPlayer != null;
+        stopMenuMusic();
+        try {
+            partyPlayer = new MediaPlayer(partyMedia);
+            partyPlayer.setVolume(Settings.get().musicLevel(PARTY_LEVEL));
+            partyPlayer.setOnEndOfMedia(() -> endParty(onFinished));
+            partyPlayer.setOnError(() -> endParty(onFinished));
+            partyPlayer.setOnReady(() -> {
+                try {
+                    partyPlayer.play();
+                } catch (RuntimeException ignored) {
+                }
+            });
+        } catch (RuntimeException ignored) {
+            partyPlayer = null;
+        }
+    }
+
+    public boolean isPartyPlaying() {
+        return partyPlayer != null;
+    }
+
+    public void stopParty() {
+        disposePlayer(partyPlayer);
+        partyPlayer = null;
+    }
+
+    private void endParty(Runnable onFinished) {
+        stopParty();
+        if (menuMusicInterruptedByParty) {
+            menuMusicInterruptedByParty = false;
+            playMenuMusic();
+        }
+        if (onFinished != null) {
+            onFinished.run();
+        }
+    }
+
     /** Re-applies the volume sliders to whatever is playing right now. */
     public void refreshVolumes() {
         Settings settings = Settings.get();
@@ -157,11 +209,15 @@ public class AudioManager {
         if (endPlayer != null) {
             endPlayer.setVolume(settings.musicLevel(END_MUSIC_LEVEL));
         }
+        if (partyPlayer != null) {
+            partyPlayer.setVolume(settings.musicLevel(PARTY_LEVEL));
+        }
     }
 
     public void dispose() {
         stopMenuMusic();
         stopEndMusic();
+        stopParty();
         disposePlayer(firePlayer);
         disposePlayer(explosionPlayer);
         disposePlayer(selectPlayer);

@@ -22,6 +22,7 @@ import ui.EndScene;
 import ui.GameScene;
 import ui.MainMenuScene;
 import ui.SetupScene;
+import ui.PartyMode;
 import ui.SettingsScene;
 import ui.UiFactory;
 import javafx.geometry.Rectangle2D;
@@ -36,11 +37,13 @@ public class Main extends Application {
     private SetupScene activeSetupScene;
     private Board localPlayer1Board;
     private boolean stageIsBorderless;
+    private PartyMode partyMode;
 
     @Override
     public void start(Stage primaryStage) {
         stage = primaryStage;
         audioManager = new AudioManager();
+        partyMode = new PartyMode(audioManager);
         configureStage(stage);
         showMainMenu();
         applyDisplaySettings();
@@ -303,8 +306,21 @@ public class Main extends Application {
                 stage.setFullScreen(!stage.isFullScreen());
                 event.consume();
             }
+            if (event.getCode() == KeyCode.F8) {
+                toggleParty(scene);
+                event.consume();
+            }
         });
         stage.setScene(scene);
+    }
+
+    /** F8 anywhere in the game. Press it again to send everyone home early. */
+    private void toggleParty(Scene scene) {
+        if (partyMode.isRunning()) {
+            partyMode.stop();
+        } else if (scene.getRoot() instanceof Pane root) {
+            partyMode.start(root);
+        }
     }
 
     private void showSettings() {
