@@ -39,6 +39,14 @@ public class Main extends Application {
     private boolean stageIsBorderless;
     private PartyMode partyMode;
 
+    // Ten keys in a fixed order. Nothing about ordinary play walks into this by accident.
+    private static final KeyCode[] PARTY_CODE = {
+        KeyCode.UP, KeyCode.UP, KeyCode.DOWN, KeyCode.DOWN,
+        KeyCode.LEFT, KeyCode.RIGHT, KeyCode.LEFT, KeyCode.RIGHT,
+        KeyCode.B, KeyCode.A
+    };
+    private int partyCodeProgress;
+
     @Override
     public void start(Stage primaryStage) {
         stage = primaryStage;
@@ -306,15 +314,28 @@ public class Main extends Application {
                 stage.setFullScreen(!stage.isFullScreen());
                 event.consume();
             }
-            if (event.getCode() == KeyCode.F8) {
-                toggleParty(scene);
-                event.consume();
-            }
+            trackPartyCode(event.getCode(), scene);
         });
         stage.setScene(scene);
     }
 
-    /** F8 anywhere in the game. Press it again to send everyone home early. */
+    /**
+     * Watches for the code. A wrong key resets the run, except when that key is itself the
+     * start of the code, which lets a fumbled attempt roll straight into the next one.
+     */
+    private void trackPartyCode(KeyCode pressed, Scene scene) {
+        if (pressed == PARTY_CODE[partyCodeProgress]) {
+            partyCodeProgress++;
+            if (partyCodeProgress == PARTY_CODE.length) {
+                partyCodeProgress = 0;
+                toggleParty(scene);
+            }
+            return;
+        }
+        partyCodeProgress = pressed == PARTY_CODE[0] ? 1 : 0;
+    }
+
+    /** Enter the code again to send everyone home early. */
     private void toggleParty(Scene scene) {
         if (partyMode.isRunning()) {
             partyMode.stop();

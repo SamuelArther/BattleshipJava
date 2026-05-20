@@ -233,18 +233,23 @@ the level you are setting.
 | **R** | Rotate the selected ship |
 | **F11** | Toggle fullscreen |
 | **Esc** | Leave fullscreen |
-| **F8** | Throw a party. Press it again to end one early. |
+| **↑ ↑ ↓ ↓ ← → ← → B A** | Throw a party. Enter it again to end one early. |
 
 ---
 
 ## The party
 
-Press **F8** anywhere in the game.
+There is a code. Enter it anywhere in the game:
+
+**↑ ↑ ↓ ↓ ← → ← → B A**
+
+Ten keys in a fixed order, which is the point: nothing about ordinary play walks into it by
+accident. A wrong key resets the run, so take your time.
 
 The lights come up over whatever screen you are on, the music starts, and when the track runs
 out the lights fade and everything goes back to exactly how it was, including the menu music if
 that was playing when you started. The overlay never takes the mouse, so a game underneath stays
-playable the entire time. Press F8 again to send everyone home early.
+playable the entire time. Enter the code again to send everyone home early.
 
 ![Party mode](docs/screenshots/party.png)
 
