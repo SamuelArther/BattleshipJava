@@ -22,6 +22,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Make the Gradle wrapper executable
+        run: chmod +x gradlew
       - name: Run the tests
         run: ./gradlew test
       - name: Keep the test report if something failed
@@ -52,6 +54,9 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Make the Gradle wrapper executable
+        shell: bash
+        run: chmod +x gradlew
 
       - name: Work out the version number
         id: version
