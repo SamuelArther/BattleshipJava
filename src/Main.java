@@ -24,6 +24,7 @@ import ui.MainMenuScene;
 import ui.SetupScene;
 import ui.PartyMode;
 import ui.SettingsScene;
+import ui.StatsScene;
 import ui.UiFactory;
 import javafx.geometry.Rectangle2D;
 import javafx.stage.Screen;
@@ -139,6 +140,7 @@ public class Main extends Application {
             () -> showLocalSetup(1),
             () -> showNetworkSetupIfOnline(GameMode.HOST),
             () -> showNetworkSetupIfOnline(GameMode.JOIN),
+            this::showStats,
             this::showSettings,
             Platform::exit
         );
@@ -342,6 +344,10 @@ public class Main extends Application {
         } else if (scene.getRoot() instanceof Pane root) {
             partyMode.start(root);
         }
+    }
+
+    private void showStats() {
+        setScene(new StatsScene(audioManager, this::showMainMenu).createScene());
     }
 
     private void showSettings() {

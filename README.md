@@ -22,6 +22,7 @@ install Java to play.
 - [Game modes](#game-modes)
 - [Difficulty levels](#difficulty-levels)
 - [Playing over a local network](#playing-over-a-local-network)
+- [Statistics](#statistics)
 - [Settings](#settings)
 - [Controls](#controls)
 - [The party](#the-party)
@@ -196,6 +197,22 @@ If joining fails, the usual causes are that the two machines are on different ne
 hotspot and the house Wi-Fi, or a guest network that isolates clients from each other — or that a
 firewall is blocking the game. On Windows, allow Battleship through Windows Defender Firewall for
 private networks when it first asks.
+
+---
+
+## Statistics
+
+**Statistics** on the main menu keeps a record of how you actually play: games, wins, losses,
+win rate, total shots fired, overall accuracy, your current winning streak and your best one,
+and the hardest difficulty you have ever beaten. Underneath is a row per difficulty showing how
+many games you have played at that level, how many you won, and your best game there, meaning
+the fewest shots you have ever needed to clear the board. Firing at every square would take a
+hundred, so anything under fifty is a good game.
+
+Only single-player games are counted, deliberately. A hot-seat game has no result that belongs
+to one person, and a network game is decided as much by your opponent as by you, so neither
+would tell you anything about how well you play. The record is kept in
+`~/.battleshipjava/statistics.properties` and there is a reset button, which asks twice.
 
 ---
 

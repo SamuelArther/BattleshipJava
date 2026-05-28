@@ -266,3 +266,16 @@
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 7, 0.0, 0, 2);
 }
 .slider .thumb:hover { -fx-background-color: brass-bright; }
+
+/* Statistics */
+.stat-value {
+    -fx-font-family: "Georgia", "Times New Roman", serif;
+    -fx-font-size: 27px;
+    -fx-font-weight: bold;
+    -fx-text-fill: brass;
+}
+.table-header {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: brass;
+}

@@ -45,7 +45,7 @@ public class ScreenshotTool extends Application {
         audioManager = new AudioManager();
         audioManager.stopMenuMusic();
 
-        show(new MainMenuScene(audioManager, noop(), noop(), noop(), noop(), noop(), noop()).createScene());
+        show(new MainMenuScene(audioManager, noop(), noop(), noop(), noop(), noop(), noop(), noop()).createScene());
         after(1.2, () -> {
             capture("menu.png");
             captureSetup();
@@ -113,7 +113,7 @@ public class ScreenshotTool extends Application {
     }
 
     private void captureParty() {
-        Scene menu = new MainMenuScene(audioManager, noop(), noop(), noop(), noop(), noop(), noop()).createScene();
+        Scene menu = new MainMenuScene(audioManager, noop(), noop(), noop(), noop(), noop(), noop(), noop()).createScene();
         show(menu);
         ui.PartyMode party = new ui.PartyMode(audioManager);
         if (menu.getRoot() instanceof javafx.scene.layout.Pane root) {

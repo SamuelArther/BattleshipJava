@@ -25,15 +25,17 @@ public class MainMenuScene {
     private final Runnable localAction;
     private final Runnable hostAction;
     private final Runnable joinAction;
+    private final Runnable statsAction;
     private final Runnable settingsAction;
     private final Runnable exitAction;
 
-    public MainMenuScene(AudioManager audioManager, Runnable playAiAction, Runnable localAction, Runnable hostAction, Runnable joinAction, Runnable settingsAction, Runnable exitAction) {
+    public MainMenuScene(AudioManager audioManager, Runnable playAiAction, Runnable localAction, Runnable hostAction, Runnable joinAction, Runnable statsAction, Runnable settingsAction, Runnable exitAction) {
         this.audioManager = audioManager;
         this.playAiAction = playAiAction;
         this.localAction = localAction;
         this.hostAction = hostAction;
         this.joinAction = joinAction;
+        this.statsAction = statsAction;
         this.settingsAction = settingsAction;
         this.exitAction = exitAction;
     }
@@ -57,6 +59,7 @@ public class MainMenuScene {
             UiFactory.createMenuButton("Local Multiplayer", audioManager, localAction),
             UiFactory.createMenuButton("Host Game", audioManager, hostAction),
             UiFactory.createMenuButton("Join Game", audioManager, joinAction),
+            UiFactory.createMenuButton("Statistics", audioManager, statsAction),
             UiFactory.createMenuButton("Settings", audioManager, settingsAction),
             UiFactory.createMenuButton("Quit Battleship", audioManager, exitAction)
         );

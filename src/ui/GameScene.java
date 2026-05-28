@@ -1,6 +1,7 @@
 package ui;
 
 import ai.BattleshipAI;
+import settings.Statistics;
 import ai.Difficulty;
 import audio.AudioManager;
 import game.AttackOutcome;
@@ -76,6 +77,10 @@ public class GameScene implements NetworkMessageListener {
 
     private Board enemyBoard;
     private BattleshipAI ai;
+    private Difficulty difficulty;
+    // Counted for the single-player record only; see Statistics.
+    private int playerShots;
+    private int playerHits;
     private NetworkGameSession networkSession;
     private StackPane root;
     private Pane effectsLayer;
@@ -103,6 +108,7 @@ public class GameScene implements NetworkMessageListener {
         gameScene.enemyBoard = new Board();
         gameScene.enemyBoard.randomize(new java.util.Random());
         gameScene.ai = new BattleshipAI(difficulty);
+        gameScene.difficulty = difficulty;
         gameScene.myTurn = true;
         return gameScene;
     }
@@ -414,6 +420,11 @@ public class GameScene implements NetworkMessageListener {
                 }
             }
 
+            playerShots++;
+            if (outcome.getResult() == AttackResult.HIT) {
+                playerHits++;
+            }
+
             markEnemyClearedWater(outcome);
             clearSelectedTarget();
             refreshEnemyGrid();
@@ -590,6 +601,9 @@ public class GameScene implements NetworkMessageListener {
 
     private void finishGame(String title, String message) {
         gameFinished = true;
+        if (difficulty != null && !isLocalMultiplayer && networkSession == null) {
+            Statistics.get().recordGame(difficulty, "Victory".equals(title), playerShots, playerHits);
+        }
         clearSelectedTarget();
         updateEnemyInteractivity();
         if (networkSession != null) {
