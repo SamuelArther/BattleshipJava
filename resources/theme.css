@@ -279,3 +279,19 @@
     -fx-font-weight: bold;
     -fx-text-fill: brass;
 }
+
+/* Terms of service */
+.terms-scroll {
+    -fx-background-color: rgba(255, 255, 255, 0.045);
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(160, 205, 245, 0.20);
+    -fx-padding: 10;
+}
+.terms-scroll > .viewport { -fx-background-color: transparent; }
+.terms-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(224, 178, 90, 0.65);
+    -fx-background-radius: 6;
+}
+.terms-scroll .scroll-bar:vertical .track { -fx-background-color: rgba(255, 255, 255, 0.07); }

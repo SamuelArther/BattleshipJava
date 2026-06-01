@@ -25,6 +25,7 @@ import ui.SetupScene;
 import ui.PartyMode;
 import ui.SettingsScene;
 import ui.StatsScene;
+import ui.TermsScene;
 import ui.UiFactory;
 import javafx.geometry.Rectangle2D;
 import javafx.stage.Screen;
@@ -54,7 +55,11 @@ public class Main extends Application {
         audioManager = new AudioManager();
         partyMode = new PartyMode(audioManager);
         configureStage(stage);
-        showMainMenu();
+        if (Settings.get().getAcceptedTermsVersion() < TermsScene.TERMS_VERSION) {
+            showTerms();
+        } else {
+            showMainMenu();
+        }
         applyDisplaySettings();
         stage.show();
     }
@@ -344,6 +349,15 @@ public class Main extends Application {
         } else if (scene.getRoot() instanceof Pane root) {
             partyMode.start(root);
         }
+    }
+
+    private void showTerms() {
+        setScene(new TermsScene(audioManager,
+            () -> {
+                Settings.get().acceptTerms(TermsScene.TERMS_VERSION);
+                showMainMenu();
+            },
+            Platform::exit).createScene());
     }
 
     private void showStats() {

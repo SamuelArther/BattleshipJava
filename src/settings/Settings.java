@@ -67,6 +67,7 @@ public final class Settings {
     private DisplayMode displayMode = DisplayMode.WINDOWED;
     private int windowWidth = 1280;
     private int windowHeight = 800;
+    private int acceptedTermsVersion;
 
     private Settings() {
     }
@@ -85,6 +86,12 @@ public final class Settings {
     public DisplayMode getDisplayMode() { return displayMode; }
     public int getWindowWidth()  { return windowWidth; }
     public int getWindowHeight() { return windowHeight; }
+    public int getAcceptedTermsVersion() { return acceptedTermsVersion; }
+
+    public void acceptTerms(int version) {
+        acceptedTermsVersion = version;
+        save();
+    }
 
     public void setMasterVolume(double value)  { masterVolume = clamp(value); }
     public void setMusicVolume(double value)   { musicVolume = clamp(value); }
@@ -131,6 +138,7 @@ public final class Settings {
         effectsVolume = readDouble(properties, "volume.effects", effectsVolume);
         windowWidth   = readInt(properties, "window.width", windowWidth);
         windowHeight  = readInt(properties, "window.height", windowHeight);
+        acceptedTermsVersion = readInt(properties, "terms.accepted.version", acceptedTermsVersion);
         try {
             displayMode = DisplayMode.valueOf(properties.getProperty("display.mode", displayMode.name()));
         } catch (IllegalArgumentException ignored) {
@@ -146,6 +154,7 @@ public final class Settings {
         properties.setProperty("display.mode", displayMode.name());
         properties.setProperty("window.width", Integer.toString(windowWidth));
         properties.setProperty("window.height", Integer.toString(windowHeight));
+        properties.setProperty("terms.accepted.version", Integer.toString(acceptedTermsVersion));
         try {
             Files.createDirectories(FILE.getParent());
             try (OutputStream out = Files.newOutputStream(FILE)) {

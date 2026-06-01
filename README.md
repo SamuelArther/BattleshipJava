@@ -22,6 +22,7 @@ install Java to play.
 - [Game modes](#game-modes)
 - [Difficulty levels](#difficulty-levels)
 - [Playing over a local network](#playing-over-a-local-network)
+- [Terms of service](#terms-of-service)
 - [Statistics](#statistics)
 - [Settings](#settings)
 - [Controls](#controls)
@@ -197,6 +198,20 @@ If joining fails, the usual causes are that the two machines are on different ne
 hotspot and the house Wi-Fi, or a guest network that isolates clients from each other — or that a
 firewall is blocking the game. On Windows, allow Battleship through Windows Defender Firewall for
 private networks when it first asks.
+
+---
+
+## Terms of service
+
+The first time you launch the game it asks you to agree to its terms of service. They are a
+joke, they are fourteen clauses long, and they are shorter than the ones you agreed to this
+morning without reading. The I Agree button stays disabled until you have actually scrolled to
+the bottom of them, which is more honesty than the genuine article usually manages.
+
+One clause is not a joke. Clause 2 is real: ships genuinely may not touch each other.
+
+Agreement is recorded by version number, so the terms are only shown again if they change.
+Declining closes the game, which is the only thing a "you must agree" screen can honestly do.
 
 ---
 
