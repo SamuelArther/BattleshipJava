@@ -1,0 +1,103 @@
+name: Publish a version
+
+# Builds and publishes any tagged version on demand, including the ones that predate the
+# build system. Versions 1.0 to 1.3 shipped before the project used Gradle at all, and 1.4
+# to 2.3 carry a Gradle wrapper whose executable bit was lost, so none of them can build
+# themselves. This takes the game's source from the requested tag and builds it with the
+# current build files, which produces a genuine build of that version's code.
+#
+# Run it from the Actions tab, or: gh workflow run publish-version.yml -f version=1.0
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to build and publish (for example 1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Package ${{ inputs.version }} for ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            label: windows
+          - os: macos-latest
+            label: macos-apple-silicon
+          - os: ubuntu-latest
+            label: linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Take the game's source from ${{ inputs.version }}
+        shell: bash
+        run: |
+          set -e
+          git rev-parse "refs/tags/${{ inputs.version }}" >/dev/null
+          # Delete first: checking out a tag's paths would leave behind newer files that
+          # the older source knows nothing about, and they would not compile against it.
+          rm -rf src resources test
+          git checkout "refs/tags/${{ inputs.version }}" -- src resources
+          echo "Source files taken from ${{ inputs.version }}:"
+          find src -name '*.java' | sort
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Make the Gradle wrapper executable
+        shell: bash
+        run: chmod +x gradlew
+
+      - name: Build the app with jpackage
+        shell: bash
+        run: ./gradlew packageApp -PappVersion=${{ inputs.version }}
+
+      - name: Zip it (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Compress-Archive -Path build/jpackage/Battleship -DestinationPath BattleshipJava-${{ inputs.version }}-windows.zip
+
+      - name: Zip it (macOS)
+        if: runner.os == 'macOS'
+        run: ditto -c -k --keepParent build/jpackage/Battleship.app BattleshipJava-${{ inputs.version }}-macos-apple-silicon.zip
+
+      - name: Tar it (Linux)
+        if: runner.os == 'Linux'
+        run: tar -C build/jpackage -czf BattleshipJava-${{ inputs.version }}-linux.tar.gz Battleship
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BattleshipJava-${{ inputs.version }}-${{ matrix.label }}
+          path: |
+            BattleshipJava-*.zip
+            BattleshipJava-*.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Publish the release
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: List what will be attached
+        run: ls -la dist
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.version }}
+          name: BattleshipJava ${{ inputs.version }}
+          files: dist/*
+          generate_release_notes: true

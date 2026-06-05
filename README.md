@@ -35,6 +35,11 @@ install Java to play.
 
 ## Download and install
 
+Every version ever released is on the
+[releases page](https://github.com/SamuelArther/BattleshipJava/releases), from 1.0 through to the
+latest, each with builds for all three platforms. Unless you have a reason to want an older one,
+take the newest.
+
 Every release on the [releases page](https://github.com/SamuelArther/BattleshipJava/releases/latest)
 carries three archives, one per platform. Each one is a self-contained application with its own
 private Java runtime inside it, so there is no JDK to install, no `JAVA_HOME` to set, and no
