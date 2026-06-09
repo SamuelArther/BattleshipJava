@@ -127,7 +127,10 @@ You start on the placement screen with five ships to position on your grid:
 | Destroyer | 2 |
 
 Select a ship from the fleet list, press **R** to rotate it between horizontal and vertical, and
-click a square on your grid to drop it there. **Randomize** lays the whole fleet out for you, and
+click a square on your grid to drop it there. As you move the pointer over the grid the ship is
+drawn where it would land: brass if that placement is legal, red if it is not. Rotating while
+hovering redraws it straight away, so you can line a ship up and see it is going to fit before
+you commit to it. **Randomize** lays the whole fleet out for you, and
 **Clear Board** starts the placement again.
 
 There is one placement rule that catches people out, so it is worth stating plainly:

@@ -295,3 +295,17 @@
     -fx-background-radius: 6;
 }
 .terms-scroll .scroll-bar:vertical .track { -fx-background-color: rgba(255, 255, 255, 0.07); }
+
+/* Ship placement preview */
+.tile-preview-ok {
+    -fx-background-color: linear-gradient(to bottom, derive(tile-ship, 40%), tile-ship);
+    -fx-border-color: brass-bright;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(246, 212, 148, 0.85), 10, 0.3, 0, 0);
+}
+.tile-preview-bad {
+    -fx-background-color: linear-gradient(to bottom, derive(danger, 25%), danger);
+    -fx-border-color: #ffb3b5;
+    -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(229, 72, 77, 0.85), 10, 0.3, 0, 0);
+}

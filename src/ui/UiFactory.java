@@ -27,6 +27,8 @@ import java.net.URL;
 public final class UiFactory {
     private static final String STYLESHEET = "/theme.css";
     private static final String TARGET_CLASS = "tile-target";
+    private static final String PREVIEW_OK = "tile-preview-ok";
+    private static final String PREVIEW_BAD = "tile-preview-bad";
     private static final String[] COLUMN_LABELS = {"A", "B", "C", "D", "E", "F", "G", "H", "I", "J"};
     private static final Image BOARD_TEXTURE = loadImage("/board/board.png", "resources/board/board.png");
 
@@ -116,8 +118,14 @@ public final class UiFactory {
         for (TileStyle candidate : TileStyle.values()) {
             button.getStyleClass().remove(candidate.styleClass);
         }
-        button.getStyleClass().remove(TARGET_CLASS);
+        button.getStyleClass().removeAll(TARGET_CLASS, PREVIEW_OK, PREVIEW_BAD);
         button.getStyleClass().add(style.styleClass);
+    }
+
+    /** Shows where a ship would land, and whether it is allowed to land there. */
+    public static void markPreviewTile(Button button, boolean legal) {
+        button.getStyleClass().removeAll(PREVIEW_OK, PREVIEW_BAD);
+        button.getStyleClass().add(legal ? PREVIEW_OK : PREVIEW_BAD);
     }
 
     /** Marks the square the player has picked out but not yet fired at. */

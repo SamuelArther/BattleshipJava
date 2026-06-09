@@ -59,6 +59,9 @@ public class SetupScene implements NetworkMessageListener {
     private final Map<ShipType, Button> shipButtons = new EnumMap<>(ShipType.class);
 
     private Orientation orientation = Orientation.HORIZONTAL;
+    // The square the pointer is over, so the preview can be redrawn when the ship is rotated.
+    private int hoverX = -1;
+    private int hoverY = -1;
     private ShipType selectedShip = ShipType.CARRIER;
     private Label statusLabel;
     private Label orientationLabel;
@@ -114,6 +117,18 @@ public class SetupScene implements NetworkMessageListener {
                 final int finalX = x;
                 final int finalY = y;
                 tileButton.setOnAction(event -> handlePlacement(finalX, finalY));
+                tileButton.setOnMouseEntered(event -> {
+                    hoverX = finalX;
+                    hoverY = finalY;
+                    renderPreview();
+                });
+                tileButton.setOnMouseExited(event -> {
+                    if (hoverX == finalX && hoverY == finalY) {
+                        hoverX = -1;
+                        hoverY = -1;
+                        renderPreview();
+                    }
+                });
                 gridButtons[y][x] = tileButton;
                 placementGrid.add(tileButton, x, y);
             }
@@ -331,6 +346,28 @@ public class SetupScene implements NetworkMessageListener {
         networkSession.joinWithCode(code);
     }
 
+    /**
+     * Draws the squares the selected ship would occupy from wherever the pointer is, in brass if
+     * that placement is legal and in red if it is not, so the touching rule can be seen rather
+     * than discovered by being told off after a click.
+     */
+    private void renderPreview() {
+        updateBoardButtons();
+        if (hoverX < 0 || localReady || selectedShip == null || board.isShipPlaced(selectedShip)) {
+            return;
+        }
+        boolean legal = board.canPlaceShip(selectedShip, hoverX, hoverY, orientation);
+        int stepX = orientation == Orientation.HORIZONTAL ? 1 : 0;
+        int stepY = orientation == Orientation.HORIZONTAL ? 0 : 1;
+        for (int i = 0; i < selectedShip.getSize(); i++) {
+            int x = hoverX + i * stepX;
+            int y = hoverY + i * stepY;
+            if (board.isInBounds(x, y)) {
+                UiFactory.markPreviewTile(gridButtons[y][x], legal);
+            }
+        }
+    }
+
     private void handlePlacement(int x, int y) {
         if (localReady) {
             statusLabel.setText("You are already ready. Waiting for the other player.");
@@ -355,11 +392,13 @@ public class SetupScene implements NetworkMessageListener {
         updateShipButtons();
         updateSelectedShipLabel();
         statusLabel.setText("Selected " + shipType.getDisplayName() + ".");
+        renderPreview();
     }
 
     private void rotateShip() {
         orientation = orientation.toggle();
         updateOrientationLabel();
+        renderPreview();
         statusLabel.setText("Orientation set to " + orientation.name().toLowerCase() + ".");
     }
 
