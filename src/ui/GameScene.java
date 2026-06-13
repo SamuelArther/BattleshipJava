@@ -1,6 +1,7 @@
 package ui;
 
 import ai.BattleshipAI;
+import settings.Achievements;
 import settings.Statistics;
 import ai.Difficulty;
 import audio.AudioManager;
@@ -602,7 +603,10 @@ public class GameScene implements NetworkMessageListener {
     private void finishGame(String title, String message) {
         gameFinished = true;
         if (difficulty != null && !isLocalMultiplayer && networkSession == null) {
-            Statistics.get().recordGame(difficulty, "Victory".equals(title), playerShots, playerHits);
+            boolean won = "Victory".equals(title);
+            Statistics.get().recordGame(difficulty, won, playerShots, playerHits);
+            Achievements.get().evaluate(new Achievements.GameResult(
+                difficulty, won, playerShots, playerHits, countSunkPlayerShips()));
         }
         clearSelectedTarget();
         updateEnemyInteractivity();
@@ -610,6 +614,16 @@ public class GameScene implements NetworkMessageListener {
             networkSession.close();
         }
         finishHandler.finish(title, message);
+    }
+
+    private int countSunkPlayerShips() {
+        int sunk = 0;
+        for (game.Ship ship : playerBoard.getShips()) {
+            if (ship.isSunk()) {
+                sunk++;
+            }
+        }
+        return sunk;
     }
 
     private String toGridRef(int x, int y) {

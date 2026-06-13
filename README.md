@@ -23,7 +23,7 @@ install Java to play.
 - [Difficulty levels](#difficulty-levels)
 - [Playing over a local network](#playing-over-a-local-network)
 - [Terms of service](#terms-of-service)
-- [Statistics](#statistics)
+- [Statistics and achievements](#statistics-and-achievements)
 - [Settings](#settings)
 - [Controls](#controls)
 - [The party](#the-party)
@@ -223,7 +223,7 @@ Declining closes the game, which is the only thing a "you must agree" screen can
 
 ---
 
-## Statistics
+## Statistics and achievements
 
 **Statistics** on the main menu keeps a record of how you actually play: games, wins, losses,
 win rate, total shots fired, overall accuracy, your current winning streak and your best one,
@@ -236,6 +236,12 @@ Only single-player games are counted, deliberately. A hot-seat game has no resul
 to one person, and a network game is decided as much by your opponent as by you, so neither
 would tell you anything about how well you play. The record is kept in
 `~/.battleshipjava/statistics.properties` and there is a reset button, which asks twice.
+
+Below that are twelve achievements. Some are for winning at all, some for winning well — under
+forty-five shots, under thirty-five, without losing a single ship, five games in a row — and two
+are for finding things rather than beating things. Beating US Navy earns Admiral; beating All of
+the US Armed Forces earns Joint Chiefs; beating every difficulty at least once earns All Hands.
+Anything you unlock during a game is shown on the screen at the end of it, once.
 
 ---
 

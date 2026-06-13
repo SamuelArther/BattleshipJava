@@ -13,6 +13,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
+import javafx.scene.control.ScrollPane;
+import settings.Achievements;
 import settings.Settings;
 import settings.Statistics;
 
@@ -41,11 +43,18 @@ public class StatsScene {
             UiFactory.createScreenTitle("Statistics"),
             buildSummary(),
             buildTable(),
+            buildAchievements(),
             buildButtons());
         content.setAlignment(Pos.CENTER);
         content.setMaxWidth(820);
+        content.setPadding(new Insets(4, 18, 18, 4));
 
-        root.getChildren().add(content);
+        // There is more here than fits the smallest window, so the whole page scrolls.
+        ScrollPane scroller = new ScrollPane(content);
+        scroller.setFitToWidth(true);
+        scroller.getStyleClass().add("page-scroll");
+
+        root.getChildren().add(scroller);
         return new Scene(root, Settings.get().getWindowWidth(), Settings.get().getWindowHeight());
     }
 
@@ -150,6 +159,29 @@ public class StatsScene {
         Label label = new Label(text);
         label.getStyleClass().add(active ? "body-text" : "muted-text");
         table.add(label, column, row);
+    }
+
+    private VBox buildAchievements() {
+        Achievements achievements = Achievements.get();
+        int total = Achievements.Achievement.values().length;
+
+        VBox list = new VBox(6);
+        for (Achievements.Achievement achievement : Achievements.Achievement.values()) {
+            boolean unlocked = achievements.isUnlocked(achievement);
+            Label label = new Label((unlocked ? "✓  " : "—  ")
+                + achievement.getDisplayName() + " — " + achievement.getDescription());
+            label.getStyleClass().add(unlocked ? "achievement-done" : "achievement-locked");
+            label.setWrapText(true);
+            list.getChildren().add(label);
+        }
+
+        Label heading = UiFactory.createSectionTitle(
+            "Achievements  (" + achievements.unlockedCount() + " of " + total + ")");
+
+        VBox panel = new VBox(14, heading, list);
+        panel.getStyleClass().add("panel");
+        panel.setPadding(new Insets(20, 24, 22, 24));
+        return panel;
     }
 
     private HBox buildButtons() {

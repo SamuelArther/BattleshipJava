@@ -309,3 +309,17 @@
     -fx-border-width: 2;
     -fx-effect: dropshadow(gaussian, rgba(229, 72, 77, 0.85), 10, 0.3, 0, 0);
 }
+
+/* Achievements */
+.achievement-unlocked { -fx-text-fill: brass-bright; -fx-font-size: 14px; -fx-font-weight: bold; }
+.achievement-locked   { -fx-text-fill: muted; -fx-font-size: 13px; }
+.achievement-done     { -fx-text-fill: parchment; -fx-font-size: 13px; }
+
+/* A whole page that scrolls */
+.page-scroll { -fx-background-color: transparent; }
+.page-scroll > .viewport { -fx-background-color: transparent; }
+.page-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: rgba(224, 178, 90, 0.6);
+    -fx-background-radius: 6;
+}
+.page-scroll .scroll-bar:vertical .track { -fx-background-color: transparent; }

@@ -67,6 +67,7 @@ public final class PartyMode {
         overlay.prefHeightProperty().bind(root.heightProperty());
         root.getChildren().add(overlay);
 
+        settings.Achievements.get().unlock(settings.Achievements.Achievement.DISCO);
         sweep.play();
         audioManager.playParty(this::finish);
         if (!audioManager.isPartyPlaying()) {

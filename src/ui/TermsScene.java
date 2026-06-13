@@ -141,6 +141,7 @@ public class TermsScene {
             if (newValue.doubleValue() >= 0.985) {
                 agree.setDisable(false);
                 hint.setText("Thank you for reading the terms. Nobody ever does.");
+                settings.Achievements.get().unlock(settings.Achievements.Achievement.LEGAL_SCHOLAR);
             }
         });
         // A viewport tall enough to show everything at once has nothing to scroll.
