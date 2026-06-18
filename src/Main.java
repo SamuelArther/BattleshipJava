@@ -17,6 +17,7 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import network.NetworkGameSession;
 import ui.EndScene;
 import ui.GameScene;
@@ -315,12 +316,17 @@ public class Main extends Application {
 
     private void setScene(Scene scene) {
         UiFactory.applyTheme(scene);
-        // F11 toggles fullscreen and Esc leaves it. Nothing forces the window back on its own.
-        scene.setOnKeyPressed(event -> {
+        // A filter, not a handler, for two reasons. Buttons take focus and swallow the arrow
+        // keys to move between themselves, so a handler on the scene never sees them and the
+        // party code could never be completed. And a handler here would replace the one a
+        // scene sets for itself, which is what had quietly killed R to rotate during setup.
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.F11) {
                 stage.setFullScreen(!stage.isFullScreen());
                 event.consume();
+                return;
             }
+            // The arrow keys are left alone so they still move between buttons as usual.
             trackPartyCode(event.getCode(), scene);
         });
         stage.setScene(scene);

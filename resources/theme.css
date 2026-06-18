@@ -28,13 +28,24 @@
     tile-ship:    #79aee6;
     tile-hit:     #e8555c;
     tile-miss:    #7c8a99;
+
+    /* Overridable by a palette file loaded after this one. */
+    sea-highlight: #17364f;
+    button-top:    #f3f8ff;
+    button-bottom: #c7dcf1;
+    button-ink:    ink;
+    ready-top:     #7fd6aa;
+    ready-bottom:  #3f9a72;
+    ready-edge:    #a9edcb;
+    panel-tint:    rgba(255, 255, 255, 0.07);
+    panel-edge:    rgba(160, 205, 245, 0.20);
 }
 
 /* Screen */
 
 .root-pane {
     -fx-background-color:
-        radial-gradient(center 50% 0%, radius 120%, #17364f 0%, ink-deep 70%),
+        radial-gradient(center 50% 0%, radius 120%, sea-highlight 0%, ink-deep 70%),
         linear-gradient(to bottom, ink 0%, ink-deep 100%);
 }
 
@@ -74,11 +85,11 @@
 
 .panel {
     -fx-background-color:
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.025) 100%);
+        linear-gradient(to bottom, panel-tint 0%, rgba(255, 255, 255, 0.025) 100%);
     -fx-background-radius: 16;
     -fx-border-radius: 16;
     -fx-border-width: 1;
-    -fx-border-color: rgba(160, 205, 245, 0.20);
+    -fx-border-color: panel-edge;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.55), 22, 0.0, 0, 8);
 }
 
@@ -96,12 +107,12 @@
 .menu-button {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: ink;
+    -fx-text-fill: button-ink;
     -fx-background-radius: 10;
     -fx-border-radius: 10;
     -fx-border-width: 1;
     -fx-border-color: rgba(255, 245, 220, 0.55);
-    -fx-background-color: linear-gradient(to bottom, #f3f8ff 0%, #c7dcf1 100%);
+    -fx-background-color: linear-gradient(to bottom, button-top 0%, button-bottom 100%);
     -fx-padding: 10 22 10 22;
     -fx-cursor: hand;
     -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 10, 0.0, 0, 4);
@@ -120,7 +131,7 @@
 .primary-button {
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: ink;
+    -fx-text-fill: button-ink;
     -fx-background-radius: 10;
     -fx-border-radius: 10;
     -fx-border-width: 1;
@@ -130,7 +141,7 @@
     -fx-cursor: hand;
     -fx-effect: dropshadow(gaussian, rgba(224, 178, 90, 0.45), 16, 0.1, 0, 5);
 }
-.primary-button:hover   { -fx-background-color: linear-gradient(to bottom, #fde3ad 0%, brass-bright 100%); }
+.primary-button:hover   { -fx-background-color: linear-gradient(to bottom, derive(brass-bright, 18%) 0%, brass-bright 100%); }
 .primary-button:pressed { -fx-background-color: linear-gradient(to bottom, brass 0%, brass-deep 100%); }
 .primary-button:disabled { -fx-opacity: 0.45; -fx-cursor: default; }
 
@@ -147,11 +158,11 @@
     -fx-cursor: hand;
     -fx-effect: dropshadow(gaussian, rgba(229, 72, 77, 0.5), 18, 0.15, 0, 5);
 }
-.danger-button:hover    { -fx-background-color: linear-gradient(to bottom, #f2686d 0%, #9c2427 100%); }
-.danger-button:pressed  { -fx-background-color: linear-gradient(to bottom, danger-deep 0%, #5c1416 100%); }
+.danger-button:hover    { -fx-background-color: linear-gradient(to bottom, derive(danger, 14%) 0%, derive(danger-deep, 18%) 100%); }
+.danger-button:pressed  { -fx-background-color: linear-gradient(to bottom, danger-deep 0%, derive(danger-deep, -30%) 100%); }
 .danger-button:disabled { -fx-opacity: 0.5; -fx-cursor: default; }
 
-.ready-button   { -fx-background-color: linear-gradient(to bottom, #7fd6aa 0%, #3f9a72 100%); -fx-border-color: #a9edcb; }
+.ready-button   { -fx-background-color: linear-gradient(to bottom, ready-top 0%, ready-bottom 100%); -fx-border-color: ready-edge; }
 .pending-button { -fx-background-color: linear-gradient(to bottom, brass-bright 0%, brass 100%); -fx-border-color: brass-bright; }
 
 /* Board tiles */
@@ -159,7 +170,7 @@
 .grid-tile {
     -fx-font-size: 12px;
     -fx-font-weight: bold;
-    -fx-text-fill: ink;
+    -fx-text-fill: button-ink;
     -fx-background-radius: 4;
     -fx-border-radius: 4;
     -fx-border-width: 1;
@@ -286,7 +297,7 @@
     -fx-background-radius: 12;
     -fx-border-radius: 12;
     -fx-border-width: 1;
-    -fx-border-color: rgba(160, 205, 245, 0.20);
+    -fx-border-color: panel-edge;
     -fx-padding: 10;
 }
 .terms-scroll > .viewport { -fx-background-color: transparent; }
