@@ -40,6 +40,50 @@ public final class Settings {
         }
     }
 
+    /**
+     * A colour scheme. Each one is a small stylesheet that redefines the theme's colour tokens
+     * and nothing else, so there is only ever one copy of the actual styling.
+     */
+    public enum Theme {
+        NAVY("Navy", "The default. A lit chart table in a dark room.", null, "#f4fbff"),
+        CRIMSON("Crimson", "A war room at night.", "/palette-crimson.css", "#ffeef0"),
+        ABYSS("Abyss", "Almost no light at all, and what there is comes back cyan.", "/palette-abyss.css", "#dff6ff"),
+        DAYLIGHT("Daylight", "The same chart table, in an office with the blinds open.", "/palette-daylight.css", "#1b3348"),
+        SIGNAL("Signal", "High contrast, with hits and misses told apart by orange against blue rather than red against grey.", "/palette-signal.css", "#ffffff"),
+        WIN98("Windows 98", "Grey bevels, square corners and a teal desktop. Sound is not included, thankfully.", "/palette-win98.css", "#000080");
+
+        private final String displayName;
+        private final String description;
+        private final String stylesheet;
+        private final String brandColour;
+
+        Theme(String displayName, String description, String stylesheet, String brandColour) {
+            this.displayName = displayName;
+            this.description = description;
+            this.stylesheet = stylesheet;
+            this.brandColour = brandColour;
+        }
+
+        /** The colour the ship silhouette above the title is tinted, so it shows on any theme. */
+        public String getBrandColour() {
+            return brandColour;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        /** The palette stylesheet to load after theme.css, or null for the built-in colours. */
+        public String getStylesheet() {
+            return stylesheet;
+        }
+
+        
+        public String toString() {
+            return displayName;
+        }
+    }
+
     /** A window size offered in the settings screen. */
     public record WindowSize(int width, int height) {
         @Override
@@ -68,6 +112,7 @@ public final class Settings {
     private int windowWidth = 1280;
     private int windowHeight = 800;
     private int acceptedTermsVersion;
+    private Theme theme = Theme.NAVY;
 
     private Settings() {
     }
@@ -87,6 +132,8 @@ public final class Settings {
     public int getWindowWidth()  { return windowWidth; }
     public int getWindowHeight() { return windowHeight; }
     public int getAcceptedTermsVersion() { return acceptedTermsVersion; }
+    public Theme getTheme() { return theme; }
+    public void setTheme(Theme value) { theme = value == null ? Theme.NAVY : value; }
 
     public void acceptTerms(int version) {
         acceptedTermsVersion = version;
@@ -144,6 +191,11 @@ public final class Settings {
         } catch (IllegalArgumentException ignored) {
             displayMode = DisplayMode.WINDOWED;
         }
+        try {
+            theme = Theme.valueOf(properties.getProperty("theme", theme.name()));
+        } catch (IllegalArgumentException ignored) {
+            theme = Theme.NAVY;
+        }
     }
 
     public void save() {
@@ -155,6 +207,7 @@ public final class Settings {
         properties.setProperty("window.width", Integer.toString(windowWidth));
         properties.setProperty("window.height", Integer.toString(windowHeight));
         properties.setProperty("terms.accepted.version", Integer.toString(acceptedTermsVersion));
+        properties.setProperty("theme", theme.name());
         try {
             Files.createDirectories(FILE.getParent());
             try (OutputStream out = Files.newOutputStream(FILE)) {

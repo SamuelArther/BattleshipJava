@@ -33,6 +33,7 @@ public class SettingsScene {
     private final Runnable backAction;
     private final DisplayChangeHandler displayChangeHandler;
     private final Settings settings = Settings.get();
+    private Scene scene;
 
     public SettingsScene(AudioManager audioManager, Runnable backAction, DisplayChangeHandler displayChangeHandler) {
         this.audioManager = audioManager;
@@ -45,12 +46,18 @@ public class SettingsScene {
 
         Label title = UiFactory.createScreenTitle("Settings");
 
-        VBox content = new VBox(22, title, buildVideoPanel(), buildAudioPanel(), buildBackButton());
+        VBox content = new VBox(20, title, buildVideoPanel(), buildAudioPanel(), buildBackButton());
         content.setAlignment(Pos.CENTER);
         content.setMaxWidth(760);
+        content.setPadding(new Insets(4, 18, 18, 4));
 
-        root.getChildren().add(content);
-        return new Scene(root, settings.getWindowWidth(), settings.getWindowHeight());
+        javafx.scene.control.ScrollPane scroller = new javafx.scene.control.ScrollPane(content);
+        scroller.setFitToWidth(true);
+        scroller.getStyleClass().add("page-scroll");
+
+        root.getChildren().add(scroller);
+        scene = new Scene(root, settings.getWindowWidth(), settings.getWindowHeight());
+        return scene;
     }
 
     private VBox buildBackButton() {
@@ -60,6 +67,34 @@ public class SettingsScene {
         }));
         box.setAlignment(Pos.CENTER);
         return box;
+    }
+
+    private VBox buildThemeRow() {
+        ComboBox<Settings.Theme> themeBox = new ComboBox<>();
+        themeBox.getItems().addAll(Settings.Theme.values());
+        themeBox.getSelectionModel().select(settings.getTheme());
+        themeBox.setPrefWidth(280);
+
+        Label description = new Label(settings.getTheme().getDescription());
+        description.getStyleClass().add("muted-text");
+        description.setWrapText(true);
+
+        themeBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                return;
+            }
+            settings.setTheme(newValue);
+            settings.save();
+            description.setText(newValue.getDescription());
+            // A palette only redefines colour tokens, so reloading the stylesheets on the
+            // live scene recolours everything in place without rebuilding the screen.
+            if (scene != null) {
+                UiFactory.applyTheme(scene);
+            }
+        });
+
+        VBox rows = new VBox(12, labelled("Theme", themeBox), description);
+        return rows;
     }
 
     // ── Video ───────────────────────────────────────────────────────────────
@@ -109,6 +144,7 @@ public class SettingsScene {
 
         VBox panel = new VBox(12,
             heading,
+            buildThemeRow(),
             labelled("Display mode", modeBox),
             modeDescription,
             labelled("Window size", sizeBox),

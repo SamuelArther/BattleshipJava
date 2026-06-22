@@ -1,0 +1,26 @@
+/* Daylight: the same chart table, in an office with the blinds open. */
+.root {
+    ink-deep:     #e9eff5;
+    ink:          #dbe5ee;
+    ink-raised:   #ffffff;
+    parchment:    #12212f;
+    muted:        #536676;
+    brass:        #a0721a;
+    brass-bright: #c9993a;
+    brass-deep:   #6d4a08;
+    danger:       #c4323a;
+    danger-deep:  #7c1116;
+    tile-water:   #b7d3e6;
+    tile-ship:    #4a89c8;
+    tile-hit:     #d34049;
+    tile-miss:    #92a1ad;
+    sea-highlight: #ffffff;
+    button-top:    #2c4d6b;
+    button-bottom: #17334c;
+    button-ink:    #f2f8ff;
+    ready-top:     #3f9a72;
+    ready-bottom:  #246b4d;
+    ready-edge:    #7fd6aa;
+    panel-tint:    rgba(20, 45, 70, 0.06);
+    panel-edge:    rgba(20, 45, 70, 0.18);
+}

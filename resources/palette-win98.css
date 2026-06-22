@@ -1,0 +1,231 @@
+/*
+ * Windows 98.
+ *
+ * Loaded after theme.css, and unlike the other palettes this one does not stop at colours:
+ * the look is mostly geometry. Square corners everywhere, no drop shadows at all, and the
+ * raised and sunken bevels done the way the real thing did them, with a two-pixel border
+ * whose four sides are different colours. White on the top and left, dark grey on the
+ * bottom and right, and swapped over when a control is pressed or is meant to look inset.
+ */
+
+.root {
+    -fx-font-family: "MS Sans Serif", "Tahoma", "Segoe UI", sans-serif;
+
+    ink-deep:     #008080;   /* the teal desktop */
+    ink:          #c0c0c0;   /* window grey */
+    ink-raised:   #c0c0c0;
+
+    parchment:    #000000;
+    muted:        #404040;
+
+    brass:        #000080;   /* title bar navy */
+    brass-bright: #1084d0;
+    brass-deep:   #000060;
+
+    danger:       #c00000;
+    danger-deep:  #800000;
+
+    tile-water:   #ffffff;
+    tile-ship:    #000080;
+    tile-hit:     #c00000;
+    tile-miss:    #808080;
+
+    sea-highlight: #008080;
+    button-top:    #c0c0c0;
+    button-bottom: #c0c0c0;
+    button-ink:    #000000;
+    ready-top:     #c0c0c0;
+    ready-bottom:  #c0c0c0;
+    ready-edge:    #ffffff;
+    panel-tint:    #c0c0c0;
+    panel-edge:    #ffffff;
+
+    bevel-light:  #ffffff;
+    bevel-face:   #c0c0c0;
+    bevel-shadow: #808080;
+    bevel-dark:   #000000;
+}
+
+/* The desktop: flat teal, no gradient, no vignette. */
+.root-pane { -fx-background-color: #008080; }
+
+/* Type */
+
+.screen-title {
+    -fx-font-family: "MS Sans Serif", "Tahoma", sans-serif;
+    -fx-font-size: 34px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+    -fx-effect: null;
+}
+.section-title {
+    -fx-font-family: "MS Sans Serif", "Tahoma", sans-serif;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #000000;
+}
+.body-text   { -fx-text-fill: #000000; -fx-font-size: 12px; }
+.muted-text  { -fx-text-fill: #404040; -fx-font-size: 11px; }
+.status-text { -fx-text-fill: #000000; -fx-font-size: 12px; }
+.axis-label  { -fx-font-family: "MS Sans Serif", "Tahoma", sans-serif; -fx-font-size: 11px;
+               -fx-font-weight: bold; -fx-text-fill: #000000; }
+.table-header { -fx-text-fill: #000080; -fx-font-size: 11px; -fx-font-weight: bold; }
+.stat-value   { -fx-font-family: "MS Sans Serif", "Tahoma", sans-serif; -fx-font-size: 22px;
+                -fx-font-weight: bold; -fx-text-fill: #000080; }
+.achievement-unlocked { -fx-text-fill: #000080; -fx-font-size: 12px; -fx-font-weight: bold; }
+.achievement-done     { -fx-text-fill: #000000; -fx-font-size: 12px; }
+.achievement-locked   { -fx-text-fill: #808080; -fx-font-size: 12px; }
+
+/* A dialog: grey face, raised bevel, hard corners. */
+.panel {
+    -fx-background-color: bevel-face;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: bevel-light bevel-dark bevel-dark bevel-light;
+    -fx-effect: null;
+}
+
+/* The board sits in a sunken well. */
+.board-frame {
+    -fx-background-color: bevel-face;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: bevel-shadow bevel-light bevel-light bevel-shadow;
+    -fx-effect: null;
+}
+
+/* Buttons */
+
+.menu-button, .primary-button, .danger-button {
+    -fx-background-color: bevel-face;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: bevel-light bevel-dark bevel-dark bevel-light;
+    -fx-text-fill: #000000;
+    -fx-font-size: 12px;
+    -fx-font-weight: normal;
+    -fx-padding: 6 18 6 18;
+    -fx-effect: null;
+    -fx-cursor: default;
+}
+.menu-button:hover, .primary-button:hover, .danger-button:hover {
+    -fx-background-color: #cdcdcd;
+    -fx-border-color: bevel-light bevel-dark bevel-dark bevel-light;
+    -fx-effect: null;
+}
+/* Pressed inverts the bevel, which is the whole trick. */
+.menu-button:pressed, .primary-button:pressed, .danger-button:pressed {
+    -fx-background-color: bevel-face;
+    -fx-border-color: bevel-dark bevel-light bevel-light bevel-dark;
+    -fx-effect: null;
+}
+.menu-button:disabled, .primary-button:disabled, .danger-button:disabled {
+    -fx-opacity: 1.0;
+    -fx-text-fill: #808080;
+}
+.primary-button { -fx-font-weight: bold; }
+.danger-button  { -fx-text-fill: #800000; }
+.ready-button   { -fx-background-color: bevel-face; -fx-text-fill: #006000; -fx-font-weight: bold; }
+.pending-button { -fx-background-color: #dcdcdc; -fx-text-fill: #000080; -fx-font-weight: bold; }
+
+/* Board squares: flat, square, one-pixel outline. */
+.grid-tile {
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 1;
+    -fx-border-color: #808080;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #000000;
+    -fx-effect: null;
+}
+.tile-water { -fx-background-color: #ffffff; }
+.tile-ship  { -fx-background-color: #000080; -fx-text-fill: #ffffff; }
+.tile-hit   { -fx-background-color: #c00000; -fx-text-fill: #ffffff; -fx-effect: null; }
+.tile-miss  { -fx-background-color: #808080; -fx-text-fill: #ffffff; }
+.grid-tile:hover:enabled {
+    -fx-border-color: #000080;
+    -fx-border-width: 2;
+    -fx-effect: null;
+}
+.tile-target      { -fx-border-color: #c00000; -fx-border-width: 2; -fx-effect: null; }
+.tile-preview-ok  { -fx-background-color: #000080; -fx-border-color: #ffffff; -fx-border-width: 1; -fx-effect: null; }
+.tile-preview-bad { -fx-background-color: #c00000; -fx-border-color: #ffffff; -fx-border-width: 1; -fx-effect: null; }
+.legend-swatch    { -fx-background-radius: 0; -fx-border-radius: 0; -fx-border-color: #808080; }
+
+/* Fields and lists sit in a sunken well with a white face. */
+.text-field, .combo-box {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: bevel-shadow bevel-light bevel-light bevel-shadow;
+    -fx-text-fill: #000000;
+}
+.text-field:focused, .combo-box:hover {
+    -fx-border-color: bevel-shadow bevel-light bevel-light bevel-shadow;
+}
+.combo-box .list-cell { -fx-text-fill: #000000; -fx-background-color: #ffffff; }
+.combo-box-popup .list-view {
+    -fx-background-color: #ffffff;
+    -fx-border-color: #000000;
+    -fx-border-width: 1;
+}
+.combo-box-popup .list-view .list-cell { -fx-text-fill: #000000; -fx-background-color: #ffffff; }
+.combo-box-popup .list-view .list-cell:hover,
+.combo-box-popup .list-view .list-cell:filled:selected {
+    -fx-background-color: #000080;
+    -fx-text-fill: #ffffff;
+}
+
+/* Scrollbars and sliders: grey, square, bevelled. */
+.slider .track {
+    -fx-background-color: #a0a0a0;
+    -fx-background-radius: 0;
+    -fx-border-width: 1;
+    -fx-border-color: bevel-shadow bevel-light bevel-light bevel-shadow;
+    -fx-pref-height: 5;
+}
+.slider .thumb {
+    -fx-background-color: bevel-face;
+    -fx-background-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: bevel-light bevel-dark bevel-dark bevel-light;
+    -fx-pref-width: 13;
+    -fx-pref-height: 22;
+    -fx-effect: null;
+}
+.terms-scroll, .page-scroll {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: bevel-shadow bevel-light bevel-light bevel-shadow;
+}
+.page-scroll { -fx-background-color: transparent; -fx-border-width: 0; }
+.terms-scroll .scroll-bar:vertical .thumb,
+.page-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: bevel-face;
+    -fx-background-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: bevel-light bevel-dark bevel-dark bevel-light;
+}
+.terms-scroll .scroll-bar:vertical .track,
+.page-scroll .scroll-bar:vertical .track { -fx-background-color: #dfdfdf; }
+
+/* Overlays */
+.turn-overlay { -fx-background-color: #008080; }
+.alert-panel {
+    -fx-background-color: bevel-face;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
+    -fx-border-width: 2;
+    -fx-border-color: bevel-light bevel-dark bevel-dark bevel-light;
+    -fx-effect: null;
+}
+
+/* The tagline sits on the teal desktop, not inside a grey panel. */
+.brand-tagline { -fx-text-fill: #ffffff; -fx-font-size: 12px; }

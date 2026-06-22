@@ -25,6 +25,7 @@ install Java to play.
 - [Terms of service](#terms-of-service)
 - [Statistics and achievements](#statistics-and-achievements)
 - [Settings](#settings)
+- [Themes](#themes)
 - [Controls](#controls)
 - [The party](#the-party)
 - [Building from source](#building-from-source)
@@ -253,6 +254,8 @@ Anything you unlock during a game is shown on the screen at the end of it, once.
 you change it, and is remembered for next time in
 `~/.battleshipjava/settings.properties` (on Windows, `C:\Users\<you>\.battleshipjava\`).
 
+**Theme** — six colour schemes, applied the moment you pick one. See [themes](#themes) below.
+
 **Display mode**
 
 - *Windowed* — an ordinary resizable window with a title bar.
@@ -267,6 +270,35 @@ to, and the whole board fits at that size.
 **Audio** — separate sliders for master volume, music and sound effects. The music slider retunes
 whatever is playing as you drag it, and the sound effects slider plays a sample so you can hear
 the level you are setting.
+
+---
+
+## Themes
+
+Six of them, in Settings under Video. Changing one recolours the game where it stands, with no
+restart and no reload.
+
+Five are colour schemes. The sixth is not.
+
+| | |
+| --- | --- |
+| **Navy** | The default. A lit chart table in a dark room. |
+| **Crimson** | A war room at night. |
+| **Abyss** | Almost no light at all, and what there is comes back cyan. |
+| **Daylight** | The same chart table, in an office with the blinds open. |
+| **Signal** | High contrast, and hits and misses told apart by orange against blue rather than red against grey, which red-green colour blindness does not separate reliably. The X and o on each square carry the same information again, for the same reason. |
+| **Windows 98** | Teal desktop, grey bevels, square corners, no shadows anywhere. |
+
+![The Windows 98 theme](docs/screenshots/theme-win98.png)
+
+![The Daylight theme](docs/screenshots/theme-daylight.png)
+
+Under the hood there is only one stylesheet. A theme is a short file loaded after it that
+redefines named colour tokens, so five of the six are about twenty lines each and none of them
+duplicates the actual styling. Windows 98 goes further and overrides shape as well as colour,
+because that look is mostly geometry: the bevels are the real trick, a two-pixel border with
+white on the top and left and near-black on the bottom and right, inverted when a button is
+pressed.
 
 ---
 

@@ -1,0 +1,27 @@
+/* Signal: high contrast, and hit and miss told apart by blue against orange rather than
+   red against grey, which red-green colour blindness does not separate reliably. The X
+   and o on the squares carry the same information again, for the same reason. */
+.root {
+    ink-deep:     #000000;
+    ink:          #0d0d0d;
+    ink-raised:   #1c1c1c;
+    parchment:    #ffffff;
+    muted:        #c9c9c9;
+    brass:        #ffb000;
+    brass-bright: #ffd45e;
+    brass-deep:   #9c6a00;
+    danger:       #ff6f00;
+    danger-deep:  #8a3c00;
+    tile-water:   #d6d6d6;
+    tile-ship:    #0072e5;
+    tile-hit:     #ff6f00;
+    tile-miss:    #4a4a4a;
+    sea-highlight: #16233a;
+    button-top:    #ffffff;
+    button-bottom: #cfcfcf;
+    ready-top:     #00a3a3;
+    ready-bottom:  #006e6e;
+    ready-edge:    #6ff0f0;
+    panel-tint:    rgba(255, 255, 255, 0.10);
+    panel-edge:    rgba(255, 255, 255, 0.42);
+}

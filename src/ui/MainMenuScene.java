@@ -48,7 +48,7 @@ public class MainMenuScene {
         Label title = UiFactory.createScreenTitle("Battleship");
 
         Label tagline = new Label("Place your fleet, read the water, and sink theirs first.");
-        tagline.getStyleClass().add("muted-text");
+        tagline.getStyleClass().add("brand-tagline");
 
         VBox brandBox = new VBox(2, shipGraphic, title, tagline);
         brandBox.setAlignment(Pos.CENTER);
@@ -82,7 +82,7 @@ public class MainMenuScene {
             imageView.setEffect(new Blend(
                 BlendMode.SRC_ATOP,
                 null,
-                new ColorInput(0, 0, 260, 120, Color.web("#f4fbff"))
+                new ColorInput(0, 0, 260, 120, Color.web(settings.Settings.get().getTheme().getBrandColour()))
             ));
         }
         return imageView;

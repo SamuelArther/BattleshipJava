@@ -1,0 +1,25 @@
+/* Abyss: almost no light at all, and what there is comes back cyan. */
+.root {
+    ink-deep:     #000407;
+    ink:          #01121a;
+    ink-raised:   #04222f;
+    parchment:    #dff6ff;
+    muted:        #7fa9ba;
+    brass:        #34d3e0;
+    brass-bright: #8ef2fb;
+    brass-deep:   #147d88;
+    danger:       #ff5470;
+    danger-deep:  #6d0f22;
+    tile-water:   #8fb6c6;
+    tile-ship:    #4fd0e6;
+    tile-hit:     #ff5470;
+    tile-miss:    #5f7580;
+    sea-highlight: #06364a;
+    button-top:    #dff6ff;
+    button-bottom: #a5cfdd;
+    ready-top:     #4fe0b0;
+    ready-bottom:  #1c8a68;
+    ready-edge:    #9df5d6;
+    panel-tint:    rgba(140, 230, 255, 0.07);
+    panel-edge:    rgba(90, 200, 225, 0.24);
+}

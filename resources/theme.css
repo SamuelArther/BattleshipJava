@@ -67,6 +67,8 @@
 }
 
 .body-text   { -fx-text-fill: parchment; -fx-font-size: 14px; }
+/* Sits on the background rather than inside a panel, so it is themed separately. */
+.brand-tagline { -fx-text-fill: muted; -fx-font-size: 13px; }
 .muted-text  { -fx-text-fill: muted;     -fx-font-size: 13px; }
 
 .status-text {

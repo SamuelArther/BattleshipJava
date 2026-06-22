@@ -1,0 +1,25 @@
+/* Crimson: a war room at night. Loaded after theme.css, which it only recolours. */
+.root {
+    ink-deep:     #140406;
+    ink:          #240a0d;
+    ink-raised:   #381216;
+    parchment:    #ffeef0;
+    muted:        #cf9ba0;
+    brass:        #e5a24a;
+    brass-bright: #ffd08a;
+    brass-deep:   #9c6318;
+    danger:       #ff4d55;
+    danger-deep:  #7a0f16;
+    tile-water:   #d8b3b6;
+    tile-ship:    #e0793f;
+    tile-hit:     #ff3b45;
+    tile-miss:    #8b7477;
+    sea-highlight: #4a1016;
+    button-top:    #ffeef0;
+    button-bottom: #e0bcc0;
+    ready-top:     #e8a24a;
+    ready-bottom:  #a86a1c;
+    ready-edge:    #ffd08a;
+    panel-tint:    rgba(255, 220, 220, 0.07);
+    panel-edge:    rgba(255, 170, 175, 0.22);
+}

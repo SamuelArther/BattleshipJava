@@ -57,15 +57,28 @@ public final class UiFactory {
         return new LegendEntry(style, description);
     }
 
-    /** Attaches the theme to a scene. Called once per scene, from Main. */
+    /**
+     * Attaches the styling to a scene: the theme itself, then the chosen palette on top of it.
+     * Safe to call again on a scene already showing, which is how a theme change takes effect
+     * without rebuilding the screen.
+     */
     public static void applyTheme(javafx.scene.Scene scene) {
-        URL stylesheet = UiFactory.class.getResource(STYLESHEET);
-        if (stylesheet != null) {
-            scene.getStylesheets().add(stylesheet.toExternalForm());
+        scene.getStylesheets().clear();
+        addStylesheet(scene, STYLESHEET);
+        String palette = settings.Settings.get().getTheme().getStylesheet();
+        if (palette != null) {
+            addStylesheet(scene, palette);
+        }
+    }
+
+    private static void addStylesheet(javafx.scene.Scene scene, String resourcePath) {
+        URL resource = UiFactory.class.getResource(resourcePath);
+        if (resource != null) {
+            scene.getStylesheets().add(resource.toExternalForm());
             return;
         }
         // Running straight from the source tree, where resources/ is not on the classpath.
-        File fallback = new File("resources/theme.css");
+        File fallback = new File("resources" + resourcePath);
         if (fallback.exists()) {
             scene.getStylesheets().add(fallback.toURI().toString());
         }

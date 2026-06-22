@@ -108,7 +108,34 @@ public class ScreenshotTool extends Application {
             "Every enemy ship is on the bottom. The fleet is yours.", noop(), noop()).createScene());
         after(1.2, () -> {
             capture("victory.png");
+            captureThemes();
+        });
+    }
+
+    private void captureThemes() {
+        // setTheme does not persist on its own, so this leaves the player's choice alone.
+        settings.Settings prefs = settings.Settings.get();
+        settings.Settings.Theme original = prefs.getTheme();
+        java.util.List<settings.Settings.Theme> themes =
+            java.util.List.of(settings.Settings.Theme.values());
+        captureTheme(themes, 0, () -> {
+            prefs.setTheme(original);
             captureParty();
+        });
+    }
+
+    private void captureTheme(java.util.List<settings.Settings.Theme> themes, int index, Runnable done) {
+        if (index >= themes.size()) {
+            done.run();
+            return;
+        }
+        settings.Settings.Theme theme = themes.get(index);
+        settings.Settings.get().setTheme(theme);
+        Scene menu = new MainMenuScene(audioManager, noop(), noop(), noop(), noop(), noop(), noop(), noop()).createScene();
+        show(menu);
+        after(0.9, () -> {
+            capture("theme-" + theme.name().toLowerCase() + ".png");
+            captureTheme(themes, index + 1, done);
         });
     }
 
