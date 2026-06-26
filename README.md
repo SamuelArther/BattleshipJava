@@ -149,6 +149,10 @@ to fire at it. A red **X** is a hit, a grey **o** is a miss, and the status line
 what happened and whose turn it is. When you sink something, the game names the ship you sank.
 Play alternates until one fleet is completely destroyed.
 
+**Battle Log** at the bottom of the screen opens a numbered record of every shot in the current
+game, both sides, saying where it landed and what it hit. It opens at the most recent entry, and
+clicking anywhere outside it closes it again.
+
 ---
 
 ## Game modes

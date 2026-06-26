@@ -82,6 +82,8 @@ public class GameScene implements NetworkMessageListener {
     // Counted for the single-player record only; see Statistics.
     private int playerShots;
     private int playerHits;
+    // Every shot of the current game, newest last, shown by the Battle Log button.
+    private final java.util.List<String> battleLog = new java.util.ArrayList<>();
     private NetworkGameSession networkSession;
     private StackPane root;
     private Pane effectsLayer;
@@ -227,7 +229,12 @@ public class GameScene implements NetworkMessageListener {
             }
             menuAction.run();
         });
-        VBox bottomBox = new VBox(12, menuButton);
+        Button logButton = UiFactory.createMenuButton("Battle Log", audioManager, this::showBattleLog);
+
+        javafx.scene.layout.HBox bottomButtons = new javafx.scene.layout.HBox(14, logButton, menuButton);
+        bottomButtons.setAlignment(Pos.CENTER);
+
+        VBox bottomBox = new VBox(12, bottomButtons);
         bottomBox.setAlignment(Pos.CENTER);
         bottomBox.setPadding(new Insets(8, 0, 8, 0));
 
@@ -267,6 +274,7 @@ public class GameScene implements NetworkMessageListener {
         }
         animateShot(playerButtons[y][x], () -> {
             AttackOutcome outcome = playerBoard.receiveAttack(x, y);
+            log("Your opponent", x, y, outcome);
             if (outcome.getResult() == AttackResult.ALREADY_ATTACKED || outcome.getResult() == AttackResult.INVALID) {
                 finishGame("Connection Closed", "An illegal network move was detected.");
                 return;
@@ -425,6 +433,7 @@ public class GameScene implements NetworkMessageListener {
             if (outcome.getResult() == AttackResult.HIT) {
                 playerHits++;
             }
+            log(isLocalMultiplayer ? "Player " + currentPlayer : "You", x, y, outcome);
 
             markEnemyClearedWater(outcome);
             clearSelectedTarget();
@@ -479,6 +488,7 @@ public class GameScene implements NetworkMessageListener {
             AttackOutcome outcome = playerBoard.receiveAttack(shot.x(), shot.y());
             boolean hit = outcome.getResult() == AttackResult.HIT;
             ai.handleShotResult(shot, outcome);
+            log("The AI", shot.x(), shot.y(), outcome);
             refreshPlayerGrid();
             updateSummaries();
             if (hit) {
@@ -614,6 +624,58 @@ public class GameScene implements NetworkMessageListener {
             networkSession.close();
         }
         finishHandler.finish(title, message);
+    }
+
+    /**
+     * The log as an overlay rather than a panel beside the boards, because the board layout
+     * already fills the smallest window the game allows and has nothing left to give.
+     */
+    private void showBattleLog() {
+        VBox entries = new VBox(4);
+        if (battleLog.isEmpty()) {
+            Label empty = new Label("Nothing has happened yet.");
+            empty.getStyleClass().add("muted-text");
+            entries.getChildren().add(empty);
+        } else {
+            for (String entry : battleLog) {
+                Label label = new Label(entry);
+                label.getStyleClass().add("body-text");
+                entries.getChildren().add(label);
+            }
+        }
+
+        javafx.scene.control.ScrollPane scroller = new javafx.scene.control.ScrollPane(entries);
+        scroller.setFitToWidth(true);
+        scroller.setPrefViewportHeight(360);
+        scroller.getStyleClass().add("terms-scroll");
+
+        VBox panel = new VBox(14, UiFactory.createSectionTitle("Battle Log"), scroller);
+        panel.getStyleClass().add("panel");
+        panel.setPadding(new Insets(20, 24, 22, 24));
+        panel.setMaxSize(560, 500);
+
+        StackPane overlay = new StackPane(panel);
+        overlay.getStyleClass().add("turn-overlay");
+        overlay.setOnMouseClicked(event -> root.getChildren().remove(overlay));
+
+        Button close = UiFactory.createMenuButton("Close", audioManager, () -> root.getChildren().remove(overlay));
+        panel.getChildren().add(close);
+
+        root.getChildren().add(overlay);
+        // Open at the newest entry, which is the one you just caused.
+        javafx.application.Platform.runLater(() -> scroller.setVvalue(1.0));
+    }
+
+    private void log(String who, int x, int y, AttackOutcome outcome) {
+        String what;
+        if (outcome.getResult() != AttackResult.HIT) {
+            what = "missed";
+        } else if (outcome.isSunkShip() && outcome.getShipType() != null) {
+            what = "hit and sank the " + outcome.getShipType().getDisplayName().toLowerCase();
+        } else {
+            what = "hit";
+        }
+        battleLog.add(battleLog.size() + 1 + ".  " + who + " " + what + " at " + toGridRef(x, y));
     }
 
     private int countSunkPlayerShips() {
