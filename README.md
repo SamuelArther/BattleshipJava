@@ -258,7 +258,7 @@ Anything you unlock during a game is shown on the screen at the end of it, once.
 you change it, and is remembered for next time in
 `~/.battleshipjava/settings.properties` (on Windows, `C:\Users\<you>\.battleshipjava\`).
 
-**Theme** — six colour schemes, applied the moment you pick one. See [themes](#themes) below.
+**Theme** — nine of them, applied the moment you pick one. See [themes](#themes) below.
 
 **Display mode**
 
@@ -279,10 +279,10 @@ the level you are setting.
 
 ## Themes
 
-Six of them, in Settings under Video. Changing one recolours the game where it stands, with no
+Nine of them, in Settings under Video. Changing one recolours the game where it stands, with no
 restart and no reload.
 
-Five are colour schemes. The sixth is not.
+Five are colour schemes. The other four are impressions of desktops.
 
 | | |
 | --- | --- |
@@ -292,17 +292,22 @@ Five are colour schemes. The sixth is not.
 | **Daylight** | The same chart table, in an office with the blinds open. |
 | **Signal** | High contrast, and hits and misses told apart by orange against blue rather than red against grey, which red-green colour blindness does not separate reliably. The X and o on each square carry the same information again, for the same reason. |
 | **Windows 98** | Teal desktop, grey bevels, square corners, no shadows anywhere. |
+| **Windows XP** | Luna blue. Rounded corners, warm grey panels, and an amber glow on whatever you point at. |
+| **Windows 7** | Aero. Translucent panels, pale highlights, and buttons that glow blue under the pointer. |
+| **macOS** | One accent blue, hairline borders, generous corners, and shadows you notice only as depth. |
 
 ![The Windows 98 theme](docs/screenshots/theme-win98.png)
 
-![The Daylight theme](docs/screenshots/theme-daylight.png)
+![The Windows XP theme](docs/screenshots/theme-winxp.png)
+
+![The macOS theme](docs/screenshots/theme-macos.png)
 
 Under the hood there is only one stylesheet. A theme is a short file loaded after it that
-redefines named colour tokens, so five of the six are about twenty lines each and none of them
-duplicates the actual styling. Windows 98 goes further and overrides shape as well as colour,
-because that look is mostly geometry: the bevels are the real trick, a two-pixel border with
-white on the top and left and near-black on the bottom and right, inverted when a button is
-pressed.
+redefines named colour tokens, so the plain colour schemes are about twenty lines each and none
+of them duplicates the actual styling. The desktop impressions go further and override shape as
+well as colour, because what separates those four is mostly geometry: 98 is hard bevels and
+square corners, XP softens them into gradients and rounds them off, 7 turns the panels to glass,
+and macOS drops the decoration almost entirely in favour of corner radius and one accent blue.
 
 ---
 

@@ -50,7 +50,10 @@ public final class Settings {
         ABYSS("Abyss", "Almost no light at all, and what there is comes back cyan.", "/palette-abyss.css", "#dff6ff"),
         DAYLIGHT("Daylight", "The same chart table, in an office with the blinds open.", "/palette-daylight.css", "#1b3348"),
         SIGNAL("Signal", "High contrast, with hits and misses told apart by orange against blue rather than red against grey.", "/palette-signal.css", "#ffffff"),
-        WIN98("Windows 98", "Grey bevels, square corners and a teal desktop. Sound is not included, thankfully.", "/palette-win98.css", "#000080");
+        WIN98("Windows 98", "Grey bevels, square corners and a teal desktop. Sound is not included, thankfully.", "/palette-win98.css", "#000080"),
+        WINXP("Windows XP", "Luna blue. Rounded corners, warm grey panels and an amber glow on whatever you point at.", "/palette-winxp.css", "#ffffff"),
+        WIN7("Windows 7", "Aero. Translucent panels, pale highlights and buttons that glow blue when you hover.", "/palette-win7.css", "#ffffff"),
+        MACOS("macOS", "One accent blue, hairline borders, generous corners and shadows you notice only as depth.", "/palette-macos.css", "#1c1c1e");
 
         private final String displayName;
         private final String description;

@@ -1,0 +1,159 @@
+/*
+ * Windows 7, in Aero.
+ *
+ * The difference from XP is glass. Panels are translucent rather than solid, edges are a
+ * pale highlight instead of a hard line, buttons glow blue on hover instead of turning
+ * amber, and everything is a little more rounded and a little softer.
+ */
+.root {
+    -fx-font-family: "Segoe UI", "Tahoma", sans-serif;
+
+    ink-deep:     #0d2b4a;
+    ink:          #16406b;
+    ink-raised:   #eef5fc;
+
+    parchment:    #10202f;
+    muted:        #4d6377;
+
+    brass:        #1f6fc4;
+    brass-bright: #5aa9f0;
+    brass-deep:   #12518f;
+
+    danger:       #d24b47;
+    danger-deep:  #8f2320;
+
+    tile-water:   #eaf3fb;
+    tile-ship:    #3d8be0;
+    tile-hit:     #d24b47;
+    tile-miss:    #9aa8b4;
+
+    sea-highlight: #2f6ea8;
+    button-top:    #ffffff;
+    button-bottom: #dbeaf7;
+    button-ink:    #10202f;
+    ready-top:     #b6e8a0;
+    ready-bottom:  #5aa83c;
+    ready-edge:    #d7f5c8;
+    panel-tint:    rgba(255, 255, 255, 0.80);
+    panel-edge:    rgba(255, 255, 255, 0.95);
+}
+
+.root-pane {
+    -fx-background-color:
+        radial-gradient(center 50% 0%, radius 130%, #3f7fbe 0%, #0d2b4a 72%),
+        linear-gradient(to bottom, #16406b, #071a2e);
+}
+
+.screen-title {
+    -fx-font-family: "Segoe UI Light", "Segoe UI", sans-serif;
+    -fx-font-size: 44px;
+    -fx-text-fill: #ffffff;
+    -fx-effect: dropshadow(gaussian, rgba(120, 200, 255, 0.75), 18, 0.25, 0, 0);
+}
+.section-title { -fx-font-family: "Segoe UI", sans-serif; -fx-font-size: 17px; -fx-text-fill: #12518f; -fx-font-weight: normal; }
+.body-text     { -fx-text-fill: #10202f; -fx-font-size: 13px; }
+.muted-text    { -fx-text-fill: #4d6377; -fx-font-size: 12px; }
+.brand-tagline { -fx-text-fill: #cfe4f7; -fx-font-size: 13px; }
+.axis-label    { -fx-font-family: "Segoe UI", sans-serif; -fx-font-size: 11px; -fx-font-weight: bold; -fx-text-fill: #12518f; }
+.table-header  { -fx-text-fill: #12518f; -fx-font-size: 12px; -fx-font-weight: bold; }
+.stat-value    { -fx-font-family: "Segoe UI Light", "Segoe UI", sans-serif; -fx-font-size: 28px; -fx-text-fill: #1f6fc4; }
+.achievement-unlocked { -fx-text-fill: #1f6fc4; -fx-font-size: 13px; -fx-font-weight: bold; }
+.achievement-done { -fx-text-fill: #10202f; -fx-font-size: 13px; }
+.achievement-locked { -fx-text-fill: #8ba0b2; -fx-font-size: 13px; }
+
+/* Glass. */
+.panel {
+    -fx-background-color: linear-gradient(to bottom, rgba(255, 255, 255, 0.92) 0%, rgba(226, 240, 252, 0.82) 100%);
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(255, 255, 255, 0.95);
+    -fx-effect: dropshadow(gaussian, rgba(0, 20, 45, 0.5), 20, 0.0, 0, 6);
+}
+.board-frame {
+    -fx-background-color: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(222, 238, 252, 0.9));
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(255, 255, 255, 0.95);
+    -fx-effect: dropshadow(gaussian, rgba(0, 20, 45, 0.45), 18, 0.0, 0, 6);
+}
+
+.menu-button, .primary-button, .danger-button {
+    -fx-background-color: linear-gradient(to bottom, #fdfefe 0%, #eef6fd 48%, #dbeaf7 52%, #cfe3f6 100%);
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+    -fx-border-color: #8fb4d4;
+    -fx-text-fill: #10202f;
+    -fx-font-size: 13px;
+    -fx-padding: 8 20 8 20;
+    -fx-effect: none;
+    -fx-cursor: default;
+}
+.menu-button:hover, .primary-button:hover, .danger-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #f4fbff 0%, #dcefff 48%, #bfe3ff 52%, #a8d8ff 100%);
+    -fx-border-color: #4ea3ea;
+    -fx-effect: dropshadow(gaussian, rgba(90, 175, 240, 0.85), 12, 0.2, 0, 0);
+}
+.menu-button:pressed, .primary-button:pressed, .danger-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #bcd9ef 0%, #d6e9f8 100%);
+    -fx-effect: none;
+}
+.menu-button:disabled, .primary-button:disabled, .danger-button:disabled { -fx-opacity: 1.0; -fx-text-fill: #9fb0bd; }
+.primary-button { -fx-font-weight: bold; }
+.danger-button  { -fx-text-fill: #8f2320; }
+.ready-button   { -fx-background-color: linear-gradient(to bottom, #e2f7d6 0%, #a9dd8c 100%); -fx-border-color: #5aa83c; }
+.pending-button { -fx-background-color: linear-gradient(to bottom, #fff8e0 0%, #ffe49a 100%); -fx-border-color: #e0ac3a; }
+
+.grid-tile {
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-border-width: 1;
+    -fx-border-color: #a9c2d8;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-effect: none;
+}
+.tile-water { -fx-background-color: linear-gradient(to bottom, #ffffff, #e2eff9); }
+.tile-ship  { -fx-background-color: linear-gradient(to bottom, #7bb7ee, #3d8be0); -fx-text-fill: #ffffff; }
+.tile-hit   { -fx-background-color: linear-gradient(to bottom, #e8807c, #d24b47); -fx-text-fill: #ffffff;
+              -fx-effect: dropshadow(gaussian, rgba(210, 75, 71, 0.6), 8, 0.2, 0, 0); }
+.tile-miss  { -fx-background-color: linear-gradient(to bottom, #c3ccd4, #9aa8b4); -fx-text-fill: #ffffff; }
+.grid-tile:hover:enabled {
+    -fx-border-color: #4ea3ea; -fx-border-width: 2;
+    -fx-effect: dropshadow(gaussian, rgba(90, 175, 240, 0.9), 10, 0.3, 0, 0);
+}
+.tile-target      { -fx-border-color: #d24b47; -fx-border-width: 2; }
+.tile-preview-ok  { -fx-background-color: linear-gradient(to bottom, #9ecdf5, #3d8be0); -fx-border-color: #4ea3ea; -fx-border-width: 2; }
+.tile-preview-bad { -fx-background-color: linear-gradient(to bottom, #ef9a96, #d24b47); -fx-border-color: #8f2320; -fx-border-width: 2; }
+.legend-swatch    { -fx-background-radius: 3; -fx-border-radius: 3; -fx-border-color: #a9c2d8; }
+
+.text-field, .combo-box {
+    -fx-background-color: #ffffff;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-border-width: 1;
+    -fx-border-color: #8fb4d4;
+    -fx-text-fill: #10202f;
+}
+.text-field:focused, .combo-box:hover { -fx-border-color: #4ea3ea; }
+.combo-box .list-cell { -fx-text-fill: #10202f; -fx-background-color: #ffffff; }
+.combo-box-popup .list-view { -fx-background-color: #ffffff; -fx-border-color: #8fb4d4; -fx-border-width: 1; }
+.combo-box-popup .list-view .list-cell { -fx-text-fill: #10202f; -fx-background-color: #ffffff; }
+.combo-box-popup .list-view .list-cell:hover,
+.combo-box-popup .list-view .list-cell:filled:selected { -fx-background-color: #3d8be0; -fx-text-fill: #ffffff; }
+
+.slider .track { -fx-background-color: linear-gradient(to bottom, #c9d8e5, #e6eff7); -fx-background-radius: 4; -fx-border-width: 1; -fx-border-color: #a9c2d8; -fx-pref-height: 6; }
+.slider .thumb { -fx-background-color: linear-gradient(to bottom, #ffffff, #cfe3f6); -fx-background-radius: 4; -fx-border-width: 1; -fx-border-color: #8fb4d4; -fx-pref-width: 14; -fx-pref-height: 20; -fx-effect: none; }
+
+.terms-scroll { -fx-background-color: rgba(255, 255, 255, 0.9); -fx-background-radius: 6; -fx-border-radius: 6; -fx-border-color: rgba(255,255,255,0.95); -fx-border-width: 1; }
+.page-scroll  { -fx-background-color: transparent; }
+.terms-scroll .scroll-bar:vertical .thumb, .page-scroll .scroll-bar:vertical .thumb {
+    -fx-background-color: linear-gradient(to bottom, #ffffff, #cfe3f6); -fx-background-radius: 4; -fx-border-width: 1; -fx-border-color: #8fb4d4;
+}
+.terms-scroll .scroll-bar:vertical .track, .page-scroll .scroll-bar:vertical .track { -fx-background-color: rgba(255,255,255,0.35); }
+
+.turn-overlay { -fx-background-color: linear-gradient(to bottom, rgba(22, 64, 107, 0.97), rgba(7, 26, 46, 0.97)); }
+.alert-panel  { -fx-background-color: linear-gradient(to bottom, rgba(255,255,255,0.95), rgba(226,240,252,0.9));
+                -fx-background-radius: 8; -fx-border-radius: 8; -fx-border-color: rgba(255,255,255,0.95); -fx-border-width: 1; }
