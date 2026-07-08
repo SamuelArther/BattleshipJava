@@ -111,6 +111,8 @@ sudo apt install libgtk-3-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 
 Without GStreamer the game still runs; it simply plays no sound.
 
+![The terms of service](docs/screenshots/terms.png)
+
 ---
 
 ## How to play
@@ -216,12 +218,21 @@ private networks when it first asks.
 
 ## Terms of service
 
-The first time you launch the game it asks you to agree to its terms of service. They are a
-joke, they are fourteen clauses long, and they are shorter than the ones you agreed to this
-morning without reading. The I Agree button stays disabled until you have actually scrolled to
-the bottom of them, which is more honesty than the genuine article usually manages.
+The first time you launch the game it asks you to agree to its terms of service. They run to
+seven parts and forty-six clauses, with definitions, a governing law provision, a severability
+clause and an entire-agreement clause, because if a joke is worth making it is worth making
+properly. The I Agree button stays disabled until you have actually scrolled to the bottom,
+which is more honesty than the genuine article usually manages, and reading them to the end
+earns an achievement.
 
-One clause is not a joke. Clause 2 is real: ships genuinely may not touch each other.
+Part I defines terms, including what counts as peeking, which is drafted deliberately broadly by
+somebody who has been peeked at. Part II governs conduct and covers reflections in kettles. Part
+III covers placement. Part IV covers difficulty and the attribution of defeat, and concedes that
+you are entitled to call every loss bad luck and every win sound judgement. Parts V and VI cover
+volume, quitting while losing, and record-keeping. Part VII is the legal boilerplate.
+
+Two clauses are not jokes. Clause 7.5 is the real CC0 licence, and clause 3.1 is the real rule
+that ships may not touch each other.
 
 Agreement is recorded by version number, so the terms are only shown again if they change.
 Declining closes the game, which is the only thing a "you must agree" screen can honestly do.

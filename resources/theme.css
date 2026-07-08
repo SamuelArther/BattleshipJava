@@ -336,3 +336,10 @@
     -fx-background-radius: 6;
 }
 .page-scroll .scroll-bar:vertical .track { -fx-background-color: transparent; }
+
+/* Part headings inside the terms. No font-family, so each theme's own face carries through. */
+.terms-part {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: brass;
+}

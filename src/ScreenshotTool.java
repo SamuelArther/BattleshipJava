@@ -108,6 +108,14 @@ public class ScreenshotTool extends Application {
             "Every enemy ship is on the bottom. The fleet is yours.", noop(), noop()).createScene());
         after(1.2, () -> {
             capture("victory.png");
+            captureTerms();
+        });
+    }
+
+    private void captureTerms() {
+        show(new ui.TermsScene(audioManager, noop(), noop()).createScene());
+        after(1.0, () -> {
+            capture("terms.png");
             captureThemes();
         });
     }
