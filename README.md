@@ -111,8 +111,6 @@ sudo apt install libgtk-3-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 
 Without GStreamer the game still runs; it simply plays no sound.
 
-![The terms of service](docs/screenshots/terms.png)
-
 ---
 
 ## How to play
@@ -217,6 +215,8 @@ private networks when it first asks.
 ---
 
 ## Terms of service
+
+![The terms of service](docs/screenshots/terms.png)
 
 The first time you launch the game it asks you to agree to its terms of service. They run to
 seven parts and forty-six clauses, with definitions, a governing law provision, a severability
