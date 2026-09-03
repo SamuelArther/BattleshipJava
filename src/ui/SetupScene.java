@@ -308,7 +308,7 @@ public class SetupScene implements NetworkMessageListener {
             updateShipButtons();
             selectNextAvailableShip();
         } else {
-            statusLabel.setText("Invalid placement. Stay in bounds and avoid overlap.");
+            statusLabel.setText("Invalid placement. Ships must fit on the grid and can't touch another ship, not even diagonally.");
         }
     }
 

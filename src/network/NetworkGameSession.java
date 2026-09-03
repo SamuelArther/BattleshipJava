@@ -1,5 +1,8 @@
 package network;
 
+import game.AttackOutcome;
+import game.AttackResult;
+import game.ShipType;
 import javafx.application.Platform;
 
 import java.io.BufferedReader;
@@ -93,8 +96,14 @@ public class NetworkGameSession {
         sendMessage("ATTACK:" + x + "," + y);
     }
 
-    public void sendResult(boolean hit) {
-        sendMessage(hit ? "RESULT:HIT" : "RESULT:MISS");
+    public void sendResult(AttackOutcome outcome) {
+        if (outcome.getResult() != AttackResult.HIT) {
+            sendMessage("RESULT:MISS");
+        } else if (outcome.isSunkShip()) {
+            sendMessage("RESULT:HIT:SUNK:" + outcome.getShipType().name());
+        } else {
+            sendMessage("RESULT:HIT");
+        }
     }
 
     public void sendTurn() {
@@ -169,12 +178,20 @@ public class NetworkGameSession {
             }
             return;
         }
-        if ("RESULT:HIT".equals(message)) {
-            dispatch(listener -> listener.onAttackResult(true));
-            return;
-        }
-        if ("RESULT:MISS".equals(message)) {
-            dispatch(listener -> listener.onAttackResult(false));
+        if (message.startsWith("RESULT:")) {
+            String[] parts = message.split(":");
+            boolean hit = parts.length >= 2 && "HIT".equals(parts[1]);
+            ShipType sunkShip = null;
+            if (hit && parts.length >= 4 && "SUNK".equals(parts[2])) {
+                try {
+                    sunkShip = ShipType.valueOf(parts[3]);
+                } catch (IllegalArgumentException exception) {
+                    dispatchError("Received an invalid result message.");
+                    return;
+                }
+            }
+            ShipType sunk = sunkShip;
+            dispatch(listener -> listener.onAttackResult(hit, sunk));
             return;
         }
         if ("WIN".equals(message)) {
@@ -200,7 +217,7 @@ public class NetworkGameSession {
         }
     }
 
-    private void attemptGameStart() {
+    private synchronized void attemptGameStart() {
         if (host && localReady && remoteReady && !started) {
             started = true;
             dispatch(listener -> listener.onGameStart(false));

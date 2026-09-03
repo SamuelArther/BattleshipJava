@@ -6,14 +6,16 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
-import javafx.stage.StageStyle;
-import javafx.scene.input.KeyCombination;
 import network.NetworkGameSession;
 import ui.EndScene;
 import ui.GameScene;
 import ui.MainMenuScene;
 import ui.SetupScene;
+
+import java.net.URL;
 
 public class Main extends Application {
     private Stage stage;
@@ -23,27 +25,17 @@ public class Main extends Application {
     @Override
     public void start(Stage primaryStage) {
         stage = primaryStage;
-        stage.initStyle(StageStyle.UNDECORATED);
         audioManager = new AudioManager();
         stage.setTitle("Battleship");
-        stage.setWidth(1600);
-        stage.setHeight(900);
-        stage.setMinWidth(1280);
-        stage.setMinHeight(720);
-        stage.setResizable(true);
-        stage.setAlwaysOnTop(true);
-        stage.setFullScreenExitHint("");
-        stage.setFullScreenExitKeyCombination(KeyCombination.NO_MATCH);
+        stage.setWidth(1280);
+        stage.setHeight(800);
+        stage.setMinWidth(1100);
+        stage.setMinHeight(760);
+        stage.setFullScreenExitHint("Press F11 or Esc to leave fullscreen");
         loadWindowIcon();
         showMainMenu();
+        stage.setMaximized(true);
         stage.show();
-        stage.setFullScreen(true);
-        stage.toFront();
-        stage.focusedProperty().addListener((observable, oldValue, focused) -> {
-            if (focused) {
-                enforceFullscreen();
-            }
-        });
     }
 
     @Override
@@ -103,28 +95,18 @@ public class Main extends Application {
     }
 
     private void setScene(Scene scene) {
-        stage.setScene(scene);
-        Platform.runLater(this::enforceFullscreen);
-    }
-
-    private void enforceFullscreen() {
-        if (stage == null) {
-            return;
-        }
-        try {
-            stage.setAlwaysOnTop(true);
-            stage.setFullScreen(true);
-            stage.toFront();
-            if (stage.getScene() != null && stage.getScene().getRoot() != null) {
-                stage.getScene().getRoot().requestFocus();
+        scene.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.getCode() == KeyCode.F11) {
+                stage.setFullScreen(!stage.isFullScreen());
+                event.consume();
             }
-        } catch (RuntimeException ignored) {
-        }
+        });
+        stage.setScene(scene);
     }
 
     private void loadWindowIcon() {
         try {
-            java.net.URL iconUrl = getClass().getResource("/icon/icon.jpg");
+            URL iconUrl = getClass().getResource("/icon/icon.jpg");
             if (iconUrl != null) {
                 stage.getIcons().add(new Image(iconUrl.toExternalForm()));
             }

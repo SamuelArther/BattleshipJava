@@ -1,5 +1,7 @@
 package ai;
 
+import game.AttackOutcome;
+import game.AttackResult;
 import game.Board;
 import game.Coordinate;
 
@@ -13,7 +15,8 @@ import java.util.Random;
 public class BattleshipAI {
     private final Difficulty difficulty;
     private final Random random;
-    private final boolean[][] attemptedShots = new boolean[Board.SIZE][Board.SIZE];
+    /** Tiles the AI will never shoot: already attacked, or known to be empty. */
+    private final boolean[][] ruledOut = new boolean[Board.SIZE][Board.SIZE];
     private final Queue<Coordinate> targetQueue = new ArrayDeque<>();
 
     public BattleshipAI(Difficulty difficulty) {
@@ -29,8 +32,8 @@ public class BattleshipAI {
         if (difficulty == Difficulty.LEVEL_2) {
             while (!targetQueue.isEmpty()) {
                 Coordinate coordinate = targetQueue.poll();
-                if (!attemptedShots[coordinate.y()][coordinate.x()]) {
-                    attemptedShots[coordinate.y()][coordinate.x()] = true;
+                if (!ruledOut[coordinate.y()][coordinate.x()]) {
+                    ruledOut[coordinate.y()][coordinate.x()] = true;
                     return coordinate;
                 }
             }
@@ -39,19 +42,28 @@ public class BattleshipAI {
         List<Coordinate> available = new ArrayList<>();
         for (int y = 0; y < Board.SIZE; y++) {
             for (int x = 0; x < Board.SIZE; x++) {
-                if (!attemptedShots[y][x]) {
+                if (!ruledOut[y][x]) {
                     available.add(new Coordinate(x, y));
                 }
             }
         }
         Collections.shuffle(available, random);
         Coordinate coordinate = available.getFirst();
-        attemptedShots[coordinate.y()][coordinate.x()] = true;
+        ruledOut[coordinate.y()][coordinate.x()] = true;
         return coordinate;
     }
 
-    public void handleShotResult(Coordinate coordinate, boolean hit) {
-        if (difficulty != Difficulty.LEVEL_2 || !hit) {
+    public void handleShotResult(Coordinate coordinate, AttackOutcome outcome) {
+        if (difficulty != Difficulty.LEVEL_2 || outcome.getResult() != AttackResult.HIT) {
+            return;
+        }
+
+        if (outcome.isSunkShip()) {
+            // Ships can't touch (see Board.canPlaceShip), so every tile around a sunk ship is empty.
+            targetQueue.clear();
+            for (Coordinate shipTile : outcome.getShip().getCoordinates()) {
+                ruleOutSurroundings(shipTile);
+            }
             return;
         }
 
@@ -62,9 +74,23 @@ public class BattleshipAI {
     }
 
     private void addTarget(int x, int y) {
-        if (x < 0 || x >= Board.SIZE || y < 0 || y >= Board.SIZE || attemptedShots[y][x]) {
+        if (!isInBounds(x, y) || ruledOut[y][x]) {
             return;
         }
         targetQueue.offer(new Coordinate(x, y));
+    }
+
+    private void ruleOutSurroundings(Coordinate center) {
+        for (int y = center.y() - 1; y <= center.y() + 1; y++) {
+            for (int x = center.x() - 1; x <= center.x() + 1; x++) {
+                if (isInBounds(x, y)) {
+                    ruledOut[y][x] = true;
+                }
+            }
+        }
+    }
+
+    private static boolean isInBounds(int x, int y) {
+        return x >= 0 && x < Board.SIZE && y >= 0 && y < Board.SIZE;
     }
 }

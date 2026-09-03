@@ -7,6 +7,7 @@ import game.AttackOutcome;
 import game.AttackResult;
 import game.Board;
 import game.Coordinate;
+import game.ShipType;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Bounds;
@@ -53,12 +54,10 @@ public class GameScene implements NetworkMessageListener {
     private Label playerSummaryLabel;
     private Label enemySummaryLabel;
     private Label targetLabel;
-    private Button fireButton;
     private boolean myTurn;
+    private int enemyShipsSunk;
     private boolean gameFinished;
     private boolean shotAnimationActive;
-    private int selectedTargetX = -1;
-    private int selectedTargetY = -1;
     private int pendingAttackX = -1;
     private int pendingAttackY = -1;
 
@@ -142,14 +141,7 @@ public class GameScene implements NetworkMessageListener {
         targetLabel.setTextFill(Color.web("#f4fbff"));
         targetLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 16));
 
-        fireButton = new Button("Fire!");
-        fireButton.setPrefWidth(180);
-        fireButton.setPrefHeight(48);
-        fireButton.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: #d62828; -fx-text-fill: white; -fx-border-color: #ffffff; -fx-border-width: 2;");
-        fireButton.setManaged(false);
-        fireButton.setVisible(false);
-
-        VBox attackBox = new VBox(10, targetLabel, fireButton);
+        VBox attackBox = new VBox(10, targetLabel);
         attackBox.setAlignment(Pos.CENTER);
         enemyBox.getChildren().add(attackBox);
 
@@ -185,13 +177,17 @@ public class GameScene implements NetworkMessageListener {
         }
         myTurn = true;
         statusLabel.setText("Your turn.");
-        clearSelectedTarget();
+        resetTargetLabel();
         updateEnemyInteractivity();
     }
 
     @Override
     public void onAttackReceived(int x, int y) {
         if (gameFinished) {
+            return;
+        }
+        if (!playerBoard.isInBounds(x, y)) {
+            finishGame("Connection Closed", "An illegal network move was detected.");
             return;
         }
         animateShot(playerButtons[y][x], () -> {
@@ -202,7 +198,7 @@ public class GameScene implements NetworkMessageListener {
             }
             refreshPlayerGrid();
             updateSummaries();
-            networkSession.sendResult(outcome.getResult() == AttackResult.HIT);
+            networkSession.sendResult(outcome);
 
             if (outcome.getResult() == AttackResult.HIT) {
                 audioManager.playExplosion();
@@ -212,13 +208,13 @@ public class GameScene implements NetworkMessageListener {
                 networkSession.sendLose();
                 finishGame("Defeat", "All of your ships were sunk.");
             } else {
-                statusLabel.setText("Opponent fired at " + toGridRef(x, y) + ".");
+                statusLabel.setText("Opponent fired at " + toGridRef(x, y) + describeHit(outcome, "your") + ".");
             }
         });
     }
 
     @Override
-    public void onAttackResult(boolean hit) {
+    public void onAttackResult(boolean hit, ShipType sunkShip) {
         if (gameFinished || pendingAttackX < 0 || pendingAttackY < 0) {
             return;
         }
@@ -226,14 +222,19 @@ public class GameScene implements NetworkMessageListener {
         enemyHits[pendingAttackY][pendingAttackX] = hit;
         refreshEnemyGrid();
         if (hit) {
-            statusLabel.setText("Hit confirmed at " + toGridRef(pendingAttackX, pendingAttackY) + ".");
+            String status = "Hit confirmed at " + toGridRef(pendingAttackX, pendingAttackY) + ".";
+            if (sunkShip != null) {
+                enemyShipsSunk++;
+                status += " You sank the enemy " + sunkShip.getDisplayName() + "!";
+            }
+            statusLabel.setText(status);
             audioManager.playExplosion();
         } else {
             statusLabel.setText("Miss at " + toGridRef(pendingAttackX, pendingAttackY) + ".");
         }
         pendingAttackX = -1;
         pendingAttackY = -1;
-        clearSelectedTarget();
+        resetTargetLabel();
         updateSummaries();
         updateEnemyInteractivity();
         networkSession.sendTurn();
@@ -310,8 +311,6 @@ public class GameScene implements NetworkMessageListener {
             statusLabel.setText("That tile was already attacked.");
             return;
         }
-        selectedTargetX = x;
-        selectedTargetY = y;
         targetLabel.setText("Firing at " + toGridRef(x, y) + "...");
         myTurn = false;
         shotAnimationActive = true;
@@ -335,10 +334,10 @@ public class GameScene implements NetworkMessageListener {
             AttackOutcome outcome = enemyBoard.receiveAttack(x, y);
             enemyAttacked[y][x] = true;
             enemyHits[y][x] = outcome.getResult() == AttackResult.HIT;
-            clearSelectedTarget();
+            resetTargetLabel();
             refreshEnemyGrid();
             if (outcome.getResult() == AttackResult.HIT) {
-                statusLabel.setText("Hit at " + toGridRef(x, y) + "!");
+                statusLabel.setText("Hit at " + toGridRef(x, y) + "!" + (outcome.isSunkShip() ? " You sank the enemy " + outcome.getShipType().getDisplayName() + "." : ""));
                 audioManager.playExplosion();
             } else {
                 statusLabel.setText("Miss at " + toGridRef(x, y) + ".");
@@ -363,13 +362,13 @@ public class GameScene implements NetworkMessageListener {
         }
         Coordinate shot = ai.nextShot();
         shotAnimationActive = true;
-        clearSelectedTarget();
+        resetTargetLabel();
         statusLabel.setText("AI is firing at " + toGridRef(shot.x(), shot.y()) + "...");
         animateShot(playerButtons[shot.y()][shot.x()], () -> {
             shotAnimationActive = false;
             AttackOutcome outcome = playerBoard.receiveAttack(shot.x(), shot.y());
             boolean hit = outcome.getResult() == AttackResult.HIT;
-            ai.handleShotResult(shot, hit);
+            ai.handleShotResult(shot, outcome);
             refreshPlayerGrid();
             updateSummaries();
             if (hit) {
@@ -380,7 +379,7 @@ public class GameScene implements NetworkMessageListener {
                 return;
             }
             myTurn = true;
-            statusLabel.setText("AI fired at " + toGridRef(shot.x(), shot.y()) + ". Your turn.");
+            statusLabel.setText("AI fired at " + toGridRef(shot.x(), shot.y()) + describeHit(outcome, "your") + ". Your turn.");
             updateEnemyInteractivity();
         });
     }
@@ -410,9 +409,6 @@ public class GameScene implements NetworkMessageListener {
                 Button button = enemyButtons[y][x];
                 if (!enemyAttacked[y][x]) {
                     UiFactory.styleGridButton(button, "#b9d7ea", "");
-                    if (x == selectedTargetX && y == selectedTargetY) {
-                        UiFactory.styleSelectedTargetButton(button);
-                    }
                 } else if (enemyHits[y][x]) {
                     UiFactory.styleGridButton(button, "#ff6b6b", "X");
                 } else {
@@ -424,12 +420,22 @@ public class GameScene implements NetworkMessageListener {
 
     private void finishGame(String title, String message) {
         gameFinished = true;
-        clearSelectedTarget();
+        resetTargetLabel();
         updateEnemyInteractivity();
         if (networkSession != null) {
             networkSession.close();
         }
         finishHandler.finish(title, message);
+    }
+
+    private String describeHit(AttackOutcome outcome, String owner) {
+        if (outcome.getResult() != AttackResult.HIT) {
+            return "";
+        }
+        if (outcome.isSunkShip()) {
+            return " and sank " + owner + " " + outcome.getShipType().getDisplayName();
+        }
+        return " and hit " + owner + " " + outcome.getShipType().getDisplayName();
     }
 
     private String toGridRef(int x, int y) {
@@ -444,23 +450,14 @@ public class GameScene implements NetworkMessageListener {
     }
 
     private void updateSummaries() {
+        int fleetSize = ShipType.values().length;
         int playerShipsRemaining = (int) playerBoard.getShips().stream().filter(ship -> !ship.isSunk()).count();
-        playerSummaryLabel.setText("Ships remaining: " + playerShipsRemaining + "/5");
+        playerSummaryLabel.setText("Ships remaining: " + playerShipsRemaining + "/" + fleetSize);
 
-        if (enemyBoard != null) {
-            int enemyShipsRemaining = (int) enemyBoard.getShips().stream().filter(ship -> !ship.isSunk()).count();
-            enemySummaryLabel.setText("Enemy ships remaining: " + enemyShipsRemaining + "/5");
-        } else {
-            int shotsTaken = 0;
-            for (int y = 0; y < Board.SIZE; y++) {
-                for (int x = 0; x < Board.SIZE; x++) {
-                    if (enemyAttacked[y][x]) {
-                        shotsTaken++;
-                    }
-                }
-            }
-            enemySummaryLabel.setText("Shots fired: " + shotsTaken);
-        }
+        int enemyShipsRemaining = enemyBoard != null
+            ? (int) enemyBoard.getShips().stream().filter(ship -> !ship.isSunk()).count()
+            : fleetSize - enemyShipsSunk;
+        enemySummaryLabel.setText("Enemy ships remaining: " + enemyShipsRemaining + "/" + fleetSize);
     }
 
     private void updateEnemyInteractivity() {
@@ -470,10 +467,7 @@ public class GameScene implements NetworkMessageListener {
                 enemyButtons[y][x].setDisable(!canFire || enemyAttacked[y][x]);
             }
         }
-        if (fireButton != null) {
-            fireButton.setDisable(true);
-        }
-        if (targetLabel != null && selectedTargetX < 0 && !shotAnimationActive) {
+        if (targetLabel != null && !shotAnimationActive) {
             targetLabel.setText(canFire ? "Click an enemy square to fire." : "Waiting for turn...");
         }
     }
@@ -537,14 +531,9 @@ public class GameScene implements NetworkMessageListener {
         return null;
     }
 
-    private void clearSelectedTarget() {
-        selectedTargetX = -1;
-        selectedTargetY = -1;
+    private void resetTargetLabel() {
         if (targetLabel != null) {
             targetLabel.setText("Click an enemy square to fire.");
-        }
-        if (enemyButtons[0][0] != null) {
-            refreshEnemyGrid();
         }
     }
 }

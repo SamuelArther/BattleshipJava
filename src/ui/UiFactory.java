@@ -65,10 +65,6 @@ public final class UiFactory {
         button.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: " + color + "; -fx-text-fill: #0b1f33; -fx-border-color: #0b1f33; -fx-border-width: 1;");
     }
 
-    public static void styleSelectedTargetButton(Button button) {
-        button.setStyle("-fx-font-size: 13px; -fx-font-weight: bold; -fx-background-color: #ffd166; -fx-text-fill: #0b1f33; -fx-border-color: #ff3b30; -fx-border-width: 3;");
-    }
-
     public static BorderPane wrapWithCoordinates(GridPane boardGrid) {
         HBox topLabels = new HBox(3);
         topLabels.setAlignment(Pos.CENTER);

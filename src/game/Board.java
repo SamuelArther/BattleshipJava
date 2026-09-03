@@ -108,7 +108,7 @@ public class Board {
 
         Tile tile = getTile(x, y);
         if (tile.isAttacked()) {
-            return new AttackOutcome(AttackResult.ALREADY_ATTACKED, false, false, tile.hasShip() ? tile.getShip().getType() : null);
+            return new AttackOutcome(AttackResult.ALREADY_ATTACKED, false, false, tile.getShip());
         }
 
         tile.setAttacked(true);
@@ -120,7 +120,7 @@ public class Board {
         ship.registerHit(new Coordinate(x, y));
         boolean sunk = ship.isSunk();
         boolean gameOver = allShipsSunk();
-        return new AttackOutcome(AttackResult.HIT, sunk, gameOver, ship.getType());
+        return new AttackOutcome(AttackResult.HIT, sunk, gameOver, ship);
     }
 
     private boolean touchesAnotherShip(int x, int y) {

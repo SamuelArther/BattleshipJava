@@ -1,5 +1,7 @@
 package network;
 
+import game.ShipType;
+
 public interface NetworkMessageListener {
     default void onWaitingForOpponent(String message) {
     }
@@ -22,7 +24,7 @@ public interface NetworkMessageListener {
     default void onAttackReceived(int x, int y) {
     }
 
-    default void onAttackResult(boolean hit) {
+    default void onAttackResult(boolean hit, ShipType sunkShip) {
     }
 
     default void onWin() {
