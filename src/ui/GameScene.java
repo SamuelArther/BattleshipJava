@@ -7,6 +7,7 @@ import game.AttackOutcome;
 import game.AttackResult;
 import game.Board;
 import game.Coordinate;
+import game.ShipType;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Bounds;
@@ -54,6 +55,7 @@ public class GameScene implements NetworkMessageListener {
     private Label enemySummaryLabel;
     private Label targetLabel;
     private boolean myTurn;
+    private int enemyShipsSunk;
     private boolean gameFinished;
     private boolean shotAnimationActive;
     private int pendingAttackX = -1;
@@ -196,7 +198,7 @@ public class GameScene implements NetworkMessageListener {
             }
             refreshPlayerGrid();
             updateSummaries();
-            networkSession.sendResult(outcome.getResult() == AttackResult.HIT);
+            networkSession.sendResult(outcome);
 
             if (outcome.getResult() == AttackResult.HIT) {
                 audioManager.playExplosion();
@@ -206,13 +208,13 @@ public class GameScene implements NetworkMessageListener {
                 networkSession.sendLose();
                 finishGame("Defeat", "All of your ships were sunk.");
             } else {
-                statusLabel.setText("Opponent fired at " + toGridRef(x, y) + ".");
+                statusLabel.setText("Opponent fired at " + toGridRef(x, y) + describeHit(outcome, "your") + ".");
             }
         });
     }
 
     @Override
-    public void onAttackResult(boolean hit) {
+    public void onAttackResult(boolean hit, ShipType sunkShip) {
         if (gameFinished || pendingAttackX < 0 || pendingAttackY < 0) {
             return;
         }
@@ -220,7 +222,12 @@ public class GameScene implements NetworkMessageListener {
         enemyHits[pendingAttackY][pendingAttackX] = hit;
         refreshEnemyGrid();
         if (hit) {
-            statusLabel.setText("Hit confirmed at " + toGridRef(pendingAttackX, pendingAttackY) + ".");
+            String status = "Hit confirmed at " + toGridRef(pendingAttackX, pendingAttackY) + ".";
+            if (sunkShip != null) {
+                enemyShipsSunk++;
+                status += " You sank the enemy " + sunkShip.getDisplayName() + "!";
+            }
+            statusLabel.setText(status);
             audioManager.playExplosion();
         } else {
             statusLabel.setText("Miss at " + toGridRef(pendingAttackX, pendingAttackY) + ".");
@@ -330,7 +337,7 @@ public class GameScene implements NetworkMessageListener {
             resetTargetLabel();
             refreshEnemyGrid();
             if (outcome.getResult() == AttackResult.HIT) {
-                statusLabel.setText("Hit at " + toGridRef(x, y) + "!");
+                statusLabel.setText("Hit at " + toGridRef(x, y) + "!" + (outcome.isSunkShip() ? " You sank the enemy " + outcome.getShipType().getDisplayName() + "." : ""));
                 audioManager.playExplosion();
             } else {
                 statusLabel.setText("Miss at " + toGridRef(x, y) + ".");
@@ -372,7 +379,7 @@ public class GameScene implements NetworkMessageListener {
                 return;
             }
             myTurn = true;
-            statusLabel.setText("AI fired at " + toGridRef(shot.x(), shot.y()) + ". Your turn.");
+            statusLabel.setText("AI fired at " + toGridRef(shot.x(), shot.y()) + describeHit(outcome, "your") + ". Your turn.");
             updateEnemyInteractivity();
         });
     }
@@ -421,6 +428,16 @@ public class GameScene implements NetworkMessageListener {
         finishHandler.finish(title, message);
     }
 
+    private String describeHit(AttackOutcome outcome, String owner) {
+        if (outcome.getResult() != AttackResult.HIT) {
+            return "";
+        }
+        if (outcome.isSunkShip()) {
+            return " and sank " + owner + " " + outcome.getShipType().getDisplayName();
+        }
+        return " and hit " + owner + " " + outcome.getShipType().getDisplayName();
+    }
+
     private String toGridRef(int x, int y) {
         return String.valueOf((char) ('A' + x)) + (y + 1);
     }
@@ -433,23 +450,14 @@ public class GameScene implements NetworkMessageListener {
     }
 
     private void updateSummaries() {
+        int fleetSize = ShipType.values().length;
         int playerShipsRemaining = (int) playerBoard.getShips().stream().filter(ship -> !ship.isSunk()).count();
-        playerSummaryLabel.setText("Ships remaining: " + playerShipsRemaining + "/5");
+        playerSummaryLabel.setText("Ships remaining: " + playerShipsRemaining + "/" + fleetSize);
 
-        if (enemyBoard != null) {
-            int enemyShipsRemaining = (int) enemyBoard.getShips().stream().filter(ship -> !ship.isSunk()).count();
-            enemySummaryLabel.setText("Enemy ships remaining: " + enemyShipsRemaining + "/5");
-        } else {
-            int shotsTaken = 0;
-            for (int y = 0; y < Board.SIZE; y++) {
-                for (int x = 0; x < Board.SIZE; x++) {
-                    if (enemyAttacked[y][x]) {
-                        shotsTaken++;
-                    }
-                }
-            }
-            enemySummaryLabel.setText("Shots fired: " + shotsTaken);
-        }
+        int enemyShipsRemaining = enemyBoard != null
+            ? (int) enemyBoard.getShips().stream().filter(ship -> !ship.isSunk()).count()
+            : fleetSize - enemyShipsSunk;
+        enemySummaryLabel.setText("Enemy ships remaining: " + enemyShipsRemaining + "/" + fleetSize);
     }
 
     private void updateEnemyInteractivity() {
