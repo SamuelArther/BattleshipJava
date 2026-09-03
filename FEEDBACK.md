@@ -1,6 +1,8 @@
 # BattleshipJava: a code review
 
-*Reviewed at commit `0133b2e` on `main`, the commit tagged v1.0.1, v2.0.0 and v2.0.1. Reviewed on Linux with JDK 21 and JavaFX 21 jars from Maven Central, so the Windows packaging script was read, not run.*
+*Reviewed at commit `0133b2e` on `main`, the commit tagged v1.0.1, v2.0.0 and v2.0.1. Reviewed on Linux with JDK 21 and JavaFX 21 jars from Maven Central, so the Windows packaging script was read, not run. Line numbers refer to that commit.*
+
+> **Status.** The commits on this branch fix most of what is below: the out-of-bounds crash, the placement message, forced fullscreen, the dead fire button, the AI's sunk-ship handling (74.3 to 58.0 shots per win), sunk-ship announcements including over the network, the game-start race, `.gitignore`, the Gradle build with `packageApp`, twelve JUnit tests, the GitHub Actions workflow that builds Windows, macOS and Linux releases from tags, and the README. Still open: pushing the newer source from your backup, and the longer-term items (CSS stylesheet, protocol clean-up, `AudioClip`, the swallowed exceptions).
 
 ## The short version
 
