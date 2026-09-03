@@ -53,12 +53,9 @@ public class GameScene implements NetworkMessageListener {
     private Label playerSummaryLabel;
     private Label enemySummaryLabel;
     private Label targetLabel;
-    private Button fireButton;
     private boolean myTurn;
     private boolean gameFinished;
     private boolean shotAnimationActive;
-    private int selectedTargetX = -1;
-    private int selectedTargetY = -1;
     private int pendingAttackX = -1;
     private int pendingAttackY = -1;
 
@@ -142,14 +139,7 @@ public class GameScene implements NetworkMessageListener {
         targetLabel.setTextFill(Color.web("#f4fbff"));
         targetLabel.setFont(Font.font("Georgia", FontWeight.BOLD, 16));
 
-        fireButton = new Button("Fire!");
-        fireButton.setPrefWidth(180);
-        fireButton.setPrefHeight(48);
-        fireButton.setStyle("-fx-font-size: 18px; -fx-font-weight: bold; -fx-background-color: #d62828; -fx-text-fill: white; -fx-border-color: #ffffff; -fx-border-width: 2;");
-        fireButton.setManaged(false);
-        fireButton.setVisible(false);
-
-        VBox attackBox = new VBox(10, targetLabel, fireButton);
+        VBox attackBox = new VBox(10, targetLabel);
         attackBox.setAlignment(Pos.CENTER);
         enemyBox.getChildren().add(attackBox);
 
@@ -185,7 +175,7 @@ public class GameScene implements NetworkMessageListener {
         }
         myTurn = true;
         statusLabel.setText("Your turn.");
-        clearSelectedTarget();
+        resetTargetLabel();
         updateEnemyInteractivity();
     }
 
@@ -237,7 +227,7 @@ public class GameScene implements NetworkMessageListener {
         }
         pendingAttackX = -1;
         pendingAttackY = -1;
-        clearSelectedTarget();
+        resetTargetLabel();
         updateSummaries();
         updateEnemyInteractivity();
         networkSession.sendTurn();
@@ -314,8 +304,6 @@ public class GameScene implements NetworkMessageListener {
             statusLabel.setText("That tile was already attacked.");
             return;
         }
-        selectedTargetX = x;
-        selectedTargetY = y;
         targetLabel.setText("Firing at " + toGridRef(x, y) + "...");
         myTurn = false;
         shotAnimationActive = true;
@@ -339,7 +327,7 @@ public class GameScene implements NetworkMessageListener {
             AttackOutcome outcome = enemyBoard.receiveAttack(x, y);
             enemyAttacked[y][x] = true;
             enemyHits[y][x] = outcome.getResult() == AttackResult.HIT;
-            clearSelectedTarget();
+            resetTargetLabel();
             refreshEnemyGrid();
             if (outcome.getResult() == AttackResult.HIT) {
                 statusLabel.setText("Hit at " + toGridRef(x, y) + "!");
@@ -367,7 +355,7 @@ public class GameScene implements NetworkMessageListener {
         }
         Coordinate shot = ai.nextShot();
         shotAnimationActive = true;
-        clearSelectedTarget();
+        resetTargetLabel();
         statusLabel.setText("AI is firing at " + toGridRef(shot.x(), shot.y()) + "...");
         animateShot(playerButtons[shot.y()][shot.x()], () -> {
             shotAnimationActive = false;
@@ -414,9 +402,6 @@ public class GameScene implements NetworkMessageListener {
                 Button button = enemyButtons[y][x];
                 if (!enemyAttacked[y][x]) {
                     UiFactory.styleGridButton(button, "#b9d7ea", "");
-                    if (x == selectedTargetX && y == selectedTargetY) {
-                        UiFactory.styleSelectedTargetButton(button);
-                    }
                 } else if (enemyHits[y][x]) {
                     UiFactory.styleGridButton(button, "#ff6b6b", "X");
                 } else {
@@ -428,7 +413,7 @@ public class GameScene implements NetworkMessageListener {
 
     private void finishGame(String title, String message) {
         gameFinished = true;
-        clearSelectedTarget();
+        resetTargetLabel();
         updateEnemyInteractivity();
         if (networkSession != null) {
             networkSession.close();
@@ -474,10 +459,7 @@ public class GameScene implements NetworkMessageListener {
                 enemyButtons[y][x].setDisable(!canFire || enemyAttacked[y][x]);
             }
         }
-        if (fireButton != null) {
-            fireButton.setDisable(true);
-        }
-        if (targetLabel != null && selectedTargetX < 0 && !shotAnimationActive) {
+        if (targetLabel != null && !shotAnimationActive) {
             targetLabel.setText(canFire ? "Click an enemy square to fire." : "Waiting for turn...");
         }
     }
@@ -541,14 +523,9 @@ public class GameScene implements NetworkMessageListener {
         return null;
     }
 
-    private void clearSelectedTarget() {
-        selectedTargetX = -1;
-        selectedTargetY = -1;
+    private void resetTargetLabel() {
         if (targetLabel != null) {
             targetLabel.setText("Click an enemy square to fire.");
-        }
-        if (enemyButtons[0][0] != null) {
-            refreshEnemyGrid();
         }
     }
 }
