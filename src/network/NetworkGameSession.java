@@ -217,7 +217,7 @@ public class NetworkGameSession {
         }
     }
 
-    private void attemptGameStart() {
+    private synchronized void attemptGameStart() {
         if (host && localReady && remoteReady && !started) {
             started = true;
             dispatch(listener -> listener.onGameStart(false));
