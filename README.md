@@ -253,10 +253,27 @@ to one person, and a network game is decided as much by your opponent as by you,
 would tell you anything about how well you play. The record is kept in
 `~/.battleshipjava/statistics.properties` and there is a reset button, which asks twice.
 
-Below that are twelve achievements. Some are for winning at all, some for winning well — under
-forty-five shots, under thirty-five, without losing a single ship, five games in a row — and two
-are for finding things rather than beating things. Beating US Navy earns Admiral; beating All of
-the US Armed Forces earns Joint Chiefs; beating every difficulty at least once earns All Hands.
+Below that are a hundred and twenty-five achievements, grouped into twelve categories so the
+list is something you can read rather than a wall. **Campaign** and **Difficulty** are the long
+haul: games played, games won, each difficulty beaten once and then ten times. **Precision** and
+**Streaks** are for winning well — under forty-five shots, under thirty-five, under twenty,
+seventeen exactly, which is the fewest there are, and win streaks up to fifty. **Your fleet**
+cares what it cost you, from losing nothing to winning with one damaged ship left. **Gunnery**,
+**The grid** and **Ordnance** watch how you actually shoot: hit streaks, miss streaks, sinking
+two ships on consecutive shots, sinking the fleet largest first, finding a ship in a corner,
+what you do with a ballistic missile. **Placement** reads the fleet you fought with off the
+board at the end — every ship on the edge, every ship clear of it, all flat, all upright, one in
+each quarter. **Ways to play** covers hot seat and network games. **Presentation** and
+**Curiosities** are for finding things rather than beating them, including the nine themes, the
+disco, and reading these terms to the end.
+
+Nothing is awarded for turning up. Every one of them is checked against what actually happened
+in a game you actually played, and what counts depends on how you were playing. A single-player
+game is judged on everything. A network game is judged on the things one player can be judged on
+alone, and never on sinking, because a peer is told only hit or miss and the game will not award
+an achievement on a guess. A hot-seat game earns only the hot-seat achievements, because two
+people share that board and no single player's gunnery can be honestly read off it.
+
 Anything you unlock during a game is shown on the screen at the end of it, once.
 
 ---

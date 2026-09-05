@@ -14,6 +14,9 @@ public class Board {
     private final Tile[][] tiles = new Tile[SIZE][SIZE];
     private final List<Ship> ships = new ArrayList<>();
 
+    /** Whether this fleet was laid out by Randomize rather than by hand, for the record kept at the end. */
+    private boolean randomized;
+
     public Board() {
         for (int y = 0; y < SIZE; y++) {
             for (int x = 0; x < SIZE; x++) {
@@ -67,6 +70,7 @@ public class Board {
 
     public void clear() {
         ships.clear();
+        randomized = false;
         for (int y = 0; y < SIZE; y++) {
             for (int x = 0; x < SIZE; x++) {
                 Tile tile = tiles[y][x];
@@ -89,6 +93,12 @@ public class Board {
                 placed = placeShip(type, x, y, orientation);
             }
         }
+        randomized = true;
+    }
+
+    /** True if this board came from Randomize and was not touched afterwards. */
+    public boolean wasRandomized() {
+        return randomized;
     }
 
     public boolean isShipPlaced(ShipType type) {

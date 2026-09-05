@@ -3,6 +3,7 @@ package ui;
 import ai.BattleshipAI;
 import settings.Achievements;
 import settings.Statistics;
+import settings.GameRecord;
 import ai.Difficulty;
 import audio.AudioManager;
 import game.AttackOutcome;
@@ -10,6 +11,7 @@ import game.AttackResult;
 import game.Board;
 import game.Coordinate;
 import game.Ship;
+import game.ShipType;
 import javafx.animation.PauseTransition;
 import javafx.animation.TranslateTransition;
 import javafx.geometry.Bounds;
@@ -99,6 +101,29 @@ public class GameScene implements NetworkMessageListener {
     // Ship visibility for local multiplayer
     private boolean shipsVisible = true;
 
+    // What this game looked like, for the achievements checked at the end of it.
+    private static boolean battleShowing;
+    private long gameStartMillis;
+    private final boolean[][] firedByMe = new boolean[Board.SIZE][Board.SIZE];
+    private boolean firstShotHit;
+    private boolean firstThreeHits;
+    private int hitStreak;
+    private int missStreak;
+    private int longestHitStreak;
+    private int longestMissStreak;
+    private int sinkRun;
+    private int mostConsecutiveSinks;
+    private final java.util.List<ShipType> sinkOrder = new java.util.ArrayList<>();
+    private boolean hitTopLeft;
+    private boolean hitBottomRight;
+    private boolean hitDeadCentre;
+    private boolean ballisticEverEarned;
+    private boolean ballisticUsed;
+    private boolean ballisticMissed;
+    private boolean ballisticSankCarrier;
+    private boolean wonWithBallistic;
+    private int turnsPassed;
+
     private GameScene(AudioManager audioManager, Board playerBoard, FinishHandler finishHandler, Runnable menuAction) {
         this.audioManager = audioManager;
         this.playerBoard = playerBoard;
@@ -139,6 +164,8 @@ public class GameScene implements NetworkMessageListener {
 
     public Scene createScene() {
         root = (StackPane) UiFactory.createRootPane();
+        gameStartMillis = System.currentTimeMillis();
+        battleShowing = true;
         effectsLayer = new Pane();
         effectsLayer.setMouseTransparent(true);
         bombImage = loadBombImage();
@@ -303,6 +330,11 @@ public class GameScene implements NetworkMessageListener {
         }
         enemyAttacked[pendingAttackY][pendingAttackX] = true;
         enemyHits[pendingAttackY][pendingAttackX] = hit;
+        playerShots++;
+        if (hit) {
+            playerHits++;
+        }
+        recordMyNetworkShot(pendingAttackX, pendingAttackY, hit);
         refreshEnemyGrid();
         if (hit) {
             statusLabel.setText("Hit confirmed at " + toGridRef(pendingAttackX, pendingAttackY) + ".");
@@ -433,6 +465,7 @@ public class GameScene implements NetworkMessageListener {
             if (outcome.getResult() == AttackResult.HIT) {
                 playerHits++;
             }
+            recordMyShot(x, y, outcome, usedBallistic);
             log(isLocalMultiplayer ? "Player " + currentPlayer : "You", x, y, outcome);
 
             markEnemyClearedWater(outcome);
@@ -612,12 +645,13 @@ public class GameScene implements NetworkMessageListener {
 
     private void finishGame(String title, String message) {
         gameFinished = true;
+        battleShowing = false;
+        boolean won = "Victory".equals(title);
         if (difficulty != null && !isLocalMultiplayer && networkSession == null) {
-            boolean won = "Victory".equals(title);
             Statistics.get().recordGame(difficulty, won, playerShots, playerHits);
-            Achievements.get().evaluate(new Achievements.GameResult(
-                difficulty, won, playerShots, playerHits, countSunkPlayerShips()));
         }
+        // Every mode is judged, but on different things. See Achievements.
+        Achievements.get().evaluate(buildGameRecord(won));
         clearSelectedTarget();
         updateEnemyInteractivity();
         if (networkSession != null) {
@@ -631,6 +665,7 @@ public class GameScene implements NetworkMessageListener {
      * already fills the smallest window the game allows and has nothing left to give.
      */
     private void showBattleLog() {
+        Achievements.get().battleLogOpened();
         VBox entries = new VBox(4);
         if (battleLog.isEmpty()) {
             Label empty = new Label("Nothing has happened yet.");
@@ -741,6 +776,8 @@ public class GameScene implements NetworkMessageListener {
         if (gameFinished || !myTurn || shotAnimationActive || pendingAttackX >= 0) {
             return;
         }
+        turnsPassed++;
+        Achievements.get().turnPassed();
         myTurn = false;
         updateEnemyInteractivity();
 
@@ -864,10 +901,191 @@ public class GameScene implements NetworkMessageListener {
             consecutiveSinks[playerIndex]++;
             if (consecutiveSinks[playerIndex] >= 2) {
                 ballisticEarned[playerIndex] = true;
+                ballisticEverEarned = true;
                 ballisticLabel.setVisible(true);
                 ballisticButton.setVisible(true);
                 audioManager.playBallistic();
             }
         }
+    }
+
+    // ── The record kept for achievements ────────────────────────────────────
+
+    /**
+     * Notes what one of your own shots did.
+     *
+     * Only the things that cannot be read off the board afterwards are tracked here. Anything
+     * still visible at the end — which of your ships were hit, which are damaged — is counted
+     * from the board itself in {@link #buildGameRecord(boolean)} rather than tallied as it happens.
+     */
+    private void recordMyShot(int x, int y, AttackOutcome outcome, boolean usedBallistic) {
+        firedByMe[y][x] = true;
+        boolean hit = outcome.getResult() == AttackResult.HIT;
+
+        if (playerShots == 1) {
+            firstShotHit = hit;
+        }
+        if (playerShots <= 3) {
+            firstThreeHits = hit && (playerShots == 1 || firstThreeHits);
+        }
+
+        if (hit) {
+            hitStreak++;
+            missStreak = 0;
+            longestHitStreak = Math.max(longestHitStreak, hitStreak);
+            if (x == 0 && y == 0) {
+                hitTopLeft = true;
+            }
+            if (x == Board.SIZE - 1 && y == Board.SIZE - 1) {
+                hitBottomRight = true;
+            }
+            int low = Board.SIZE / 2 - 1;
+            if ((x == low || x == low + 1) && (y == low || y == low + 1)) {
+                hitDeadCentre = true;
+            }
+        } else {
+            missStreak++;
+            hitStreak = 0;
+            longestMissStreak = Math.max(longestMissStreak, missStreak);
+        }
+
+        if (outcome.isSunkShip()) {
+            sinkOrder.add(outcome.getShipType());
+            sinkRun++;
+            mostConsecutiveSinks = Math.max(mostConsecutiveSinks, sinkRun);
+        } else {
+            sinkRun = 0;
+        }
+
+        if (usedBallistic) {
+            ballisticUsed = true;
+            if (hit) {
+                if (outcome.isSunkShip() && outcome.getShipType() == ShipType.CARRIER) {
+                    ballisticSankCarrier = true;
+                }
+            } else {
+                ballisticMissed = true;
+            }
+        }
+        if (outcome.isGameOver() && usedBallistic) {
+            wonWithBallistic = true;
+        }
+    }
+
+    /** The same, for a network game, where all a peer is told is hit or miss. */
+    private void recordMyNetworkShot(int x, int y, boolean hit) {
+        firedByMe[y][x] = true;
+        if (playerShots == 1) {
+            firstShotHit = hit;
+        }
+        if (playerShots <= 3) {
+            firstThreeHits = hit && (playerShots == 1 || firstThreeHits);
+        }
+        if (hit) {
+            hitStreak++;
+            missStreak = 0;
+            longestHitStreak = Math.max(longestHitStreak, hitStreak);
+            if (x == 0 && y == 0) {
+                hitTopLeft = true;
+            }
+            if (x == Board.SIZE - 1 && y == Board.SIZE - 1) {
+                hitBottomRight = true;
+            }
+            int low = Board.SIZE / 2 - 1;
+            if ((x == low || x == low + 1) && (y == low || y == low + 1)) {
+                hitDeadCentre = true;
+            }
+        } else {
+            missStreak++;
+            hitStreak = 0;
+            longestMissStreak = Math.max(longestMissStreak, missStreak);
+        }
+    }
+
+    /** True once you have fired at all ten squares of any one row or any one column. */
+    private boolean sweptALine() {
+        for (int i = 0; i < Board.SIZE; i++) {
+            boolean wholeRow = true;
+            boolean wholeColumn = true;
+            for (int j = 0; j < Board.SIZE; j++) {
+                if (!firedByMe[i][j]) {
+                    wholeRow = false;
+                }
+                if (!firedByMe[j][i]) {
+                    wholeColumn = false;
+                }
+            }
+            if (wholeRow || wholeColumn) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private GameRecord buildGameRecord(boolean won) {
+        GameRecord record = new GameRecord();
+        record.mode = isLocalMultiplayer ? GameRecord.Mode.LOCAL
+            : networkSession != null ? GameRecord.Mode.NETWORK : GameRecord.Mode.SINGLEPLAYER;
+        record.difficulty = difficulty;
+        record.won = won;
+
+        record.shots = playerShots;
+        record.hits = playerHits;
+        record.shipsLost = countSunkPlayerShips();
+        record.shipsRemaining = playerBoard.getShips().size() - record.shipsLost;
+
+        // Counted from the board rather than tallied during play, so it cannot drift.
+        for (Ship ship : playerBoard.getShips()) {
+            boolean damaged = false;
+            for (Coordinate coordinate : ship.getCoordinates()) {
+                if (playerBoard.getTile(coordinate.x(), coordinate.y()).isAttacked()) {
+                    damaged = true;
+                    record.enemyHitsTaken++;
+                }
+            }
+            if (damaged) {
+                if (ship.getType() == ShipType.CARRIER) {
+                    record.carrierEverHit = true;
+                }
+                if (ship.getType() == ShipType.DESTROYER) {
+                    record.destroyerEverHit = true;
+                }
+                if (!ship.isSunk()) {
+                    record.lastShipDamaged = true;
+                }
+            }
+        }
+
+        record.firstShotHit = firstShotHit;
+        record.firstThreeHits = firstThreeHits && playerShots >= 3;
+        record.longestHitStreak = longestHitStreak;
+        record.longestMissStreak = longestMissStreak;
+        record.mostConsecutiveSinks = mostConsecutiveSinks;
+        record.sinkOrder.addAll(sinkOrder);
+
+        record.hitTopLeft = hitTopLeft;
+        record.hitBottomRight = hitBottomRight;
+        record.hitDeadCentre = hitDeadCentre;
+        record.firedEveryCorner = firedByMe[0][0] && firedByMe[0][Board.SIZE - 1]
+            && firedByMe[Board.SIZE - 1][0] && firedByMe[Board.SIZE - 1][Board.SIZE - 1];
+        record.sweptALine = sweptALine();
+
+        record.ballisticEarned = ballisticEverEarned;
+        record.ballisticUsed = ballisticUsed;
+        record.ballisticMissed = ballisticMissed;
+        record.ballisticSankCarrier = ballisticSankCarrier;
+        record.wonWithBallistic = wonWithBallistic;
+
+        record.describeFleet(playerBoard);
+
+        record.turnsPassed = turnsPassed;
+        record.durationMillis = System.currentTimeMillis() - gameStartMillis;
+        record.finishedHour = java.time.LocalTime.now().getHour();
+        return record;
+    }
+
+    /** True while a battle is on screen, which is what makes starting the disco during one count. */
+    public static boolean isBattleShowing() {
+        return battleShowing;
     }
 }

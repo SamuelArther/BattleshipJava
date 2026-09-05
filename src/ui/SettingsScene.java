@@ -13,6 +13,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import settings.Settings;
+import settings.Achievements;
 
 /**
  * Video and audio settings.
@@ -84,6 +85,7 @@ public class SettingsScene {
                 return;
             }
             settings.setTheme(newValue);
+            Achievements.get().themeChosen(newValue);
             settings.save();
             description.setText(newValue.getDescription());
             // A palette only redefines colour tokens, so reloading the stylesheets on the
