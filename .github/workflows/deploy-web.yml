@@ -36,3 +36,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # The action still defaults to wrangler 3, which predates free-plan Durable Objects.
+          wranglerVersion: "4"
