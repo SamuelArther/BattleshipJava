@@ -2560,18 +2560,89 @@ function generateCode() {
   return code;
 }
 
-var Room = {
-  handle: null, resolved: false, pending: null,
-  open: function () {
-    if (this.resolved) return Promise.resolve(this.handle);
+/*
+ * Finding the other player.
+ *
+ * The desktop build opens a socket on the LAN. A page cannot, so this uses whichever of two
+ * transports the page happens to be served by, and the six-character code works the same on
+ * both. On claude.ai the artifact's live room carries the messages. On the Cloudflare Worker
+ * the Worker does, over a WebSocket into a Durable Object named after the code. If neither is
+ * there — opened from a file, or offline — network play is simply not offered, and Host and
+ * Join say so rather than hanging.
+ */
+var Net = {
+  mode: null, room: null, pending: null,
+
+  detect: function () {
     if (this.pending) return this.pending;
-    var self = this;
     this.pending = (window.claude && window.claude.use ? window.claude.use("room") : Promise.resolve(null))
-      .then(function (room) { self.handle = room; self.resolved = true; return room; })
-      .catch(function () { self.resolved = true; return null; });
+      .then(function (room) {
+        if (room) { Net.room = room; Net.mode = "room"; return "room"; }
+        return Net.probeWorker();
+      })
+      ["catch"](function () { return Net.probeWorker(); });
     return this.pending;
+  },
+
+  /* The Worker answers this; anywhere else it fails or 404s, which is the answer too. */
+  probeWorker: function () {
+    if (location.protocol !== "http:" && location.protocol !== "https:") return Promise.resolve(null);
+    return fetch("ws-check", { cache: "no-store" })
+      .then(function (response) {
+        Net.mode = response.ok ? "socket" : null;
+        return Net.mode;
+      })
+      ["catch"](function () { return null; });
   }
 };
+
+/** Opens a channel for one join code. Resolves to {send, close}, or null if there is no transport. */
+function openChannel(code, onMessage) {
+  return Net.detect().then(function (mode) {
+    if (mode === "room") {
+      var off = Net.room.on("bs", function (event) {
+        onMessage(event && event.data ? event.data : event);
+      });
+      if (Net.room.presence) {
+        try { Net.room.presence({ code: code }); } catch (e) { /* presence is a nicety here */ }
+      }
+      return {
+        send: function (message) { Net.room.emit("bs", message); },
+        close: function () { if (typeof off === "function") off(); }
+      };
+    }
+
+    if (mode === "socket") {
+      return new Promise(function (resolve) {
+        var scheme = location.protocol === "https:" ? "wss://" : "ws://";
+        var socket;
+        try {
+          socket = new WebSocket(scheme + location.host + "/ws?code=" + encodeURIComponent(code));
+        } catch (e) {
+          resolve(null);
+          return;
+        }
+        var queue = [];
+        socket.addEventListener("open", function () {
+          queue.forEach(function (message) { socket.send(JSON.stringify(message)); });
+          queue = [];
+        });
+        socket.addEventListener("message", function (event) {
+          try { onMessage(JSON.parse(event.data)); } catch (e) { /* not ours */ }
+        });
+        resolve({
+          send: function (message) {
+            if (socket.readyState === 1) socket.send(JSON.stringify(message));
+            else if (socket.readyState === 0) queue.push(message);
+          },
+          close: function () { try { socket.close(); } catch (e) { } }
+        });
+      });
+    }
+
+    return null;
+  });
+}
 
 function NetworkGameSession(listener) {
   this.listener = listener;
@@ -2581,33 +2652,36 @@ function NetworkGameSession(listener) {
   this.peerId = null;
   this.connected = false;
   this.closed = false;
-  this.unsubscribe = null;
+  this.channel = null;
+  this.channelPromise = null;
   this.joinTimer = null;
 }
 
 NetworkGameSession.prototype.send = function (kind, payload) {
   var self = this;
-  Room.open().then(function (room) {
-    if (!room || self.closed) return;
+  if (!this.channelPromise) return;
+  this.channelPromise.then(function (channel) {
+    if (!channel || self.closed) return;
     var message = { kind: kind, code: self.code, from: self.id, to: self.peerId };
     for (var key in payload) message[key] = payload[key];
-    try { room.emit("bs", message); } catch (e) { /* a dropped moment is not fatal here */ }
+    try { channel.send(message); } catch (e) { /* a dropped moment is not fatal here */ }
   });
 };
 
 NetworkGameSession.prototype.listen = function () {
   var self = this;
-  return Room.open().then(function (room) {
-    if (!room) { self.listener.onError("Network multiplayer is not available in this view."); return null; }
-    var off = room.on("bs", function (event) {
-      var message = event && event.data ? event.data : event;
-      if (!message || message.code !== self.code || message.from === self.id) return;
-      if (message.to && message.to !== self.id) return;
-      self.receive(message);
-    });
-    self.unsubscribe = off;
-    if (room.presence) { try { room.presence({ code: self.code, role: self.role }); } catch (e) {} }
-    return room;
+  this.channelPromise = openChannel(this.code, function (message) {
+    if (!message || message.code !== self.code || message.from === self.id) return;
+    if (message.to && message.to !== self.id) return;
+    self.receive(message);
+  });
+  return this.channelPromise.then(function (channel) {
+    if (!channel) {
+      self.listener.onError("Network multiplayer is not available here.");
+      return null;
+    }
+    self.channel = channel;
+    return channel;
   });
 };
 
@@ -2691,12 +2765,12 @@ NetworkGameSession.prototype.close = function () {
   this.closed = true;
   if (this.connected) this.send("bye", {});
   window.clearTimeout(this.joinTimer);
-  if (typeof this.unsubscribe === "function") { try { this.unsubscribe(); } catch (e) {} }
+  if (this.channel) { try { this.channel.close(); } catch (e) { } }
 };
 
 function showNetworkSetupIfOnline(gameMode) {
-  Room.open().then(function (room) {
-    if (room && navigator.onLine !== false) showSetup(gameMode, 1);
+  Net.detect().then(function (mode) {
+    if (mode && navigator.onLine !== false) showSetup(gameMode, 1);
     else showOfflinePopup();
   });
 }

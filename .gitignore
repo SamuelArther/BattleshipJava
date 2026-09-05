@@ -32,3 +32,6 @@ package/
 # Gradle
 .gradle/
 build/
+
+# Built by the deploy workflow from battleship.html
+public/

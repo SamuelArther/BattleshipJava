@@ -18,6 +18,7 @@ install Java to play.
 ## Contents
 
 - [Download and install](#download-and-install)
+- [In a browser](#in-a-browser)
 - [How to play](#how-to-play)
 - [Game modes](#game-modes)
 - [Difficulty levels](#difficulty-levels)
@@ -110,6 +111,37 @@ sudo apt install libgtk-3-0 gstreamer1.0-plugins-base gstreamer1.0-plugins-good
 ```
 
 Without GStreamer the game still runs; it simply plays no sound.
+
+---
+
+## In a browser
+
+`battleship.html` is the whole game as one page: the same nine themes, the same six
+difficulties, the same rules down to the water that clears around a ship when it sinks, and the
+same hundred and twenty-five achievements. It has no build step and no dependencies. Open the
+file and it runs.
+
+It is not a screenshot of the desktop game, it is the desktop game's own stylesheet translated:
+the same colour tokens, the same class names, the same nine palettes layered over one palette's
+worth of styling. Two things could not come across as they are. The sound is synthesised rather
+than the mp3s, which are twenty-four megabytes and have no business in a page. And the ship and
+the falling shell are drawn as shapes rather than loaded as images.
+
+On a phone the two boards stack, the status line follows you down the screen, and placing a ship
+takes two taps rather than a hover: the first shows you where it would go and whether that is
+allowed, the second puts it there.
+
+**Deploying it.** `.github/workflows/deploy-web.yml` puts the page on Cloudflare whenever it
+changes, along with `worker/index.js`, a small Worker that does the one thing a page cannot do
+for itself: let two people find each other. A browser cannot open a socket on the LAN, so the
+six-character join code names a Durable Object instead, and the Worker passes messages between
+whoever is in that room. It stores nothing and knows nothing about the game — both players still
+run the whole thing themselves, exactly as the two LAN peers do.
+
+The workflow needs two repository secrets: `CLOUDFLARE_API_TOKEN`, from the "Edit Cloudflare
+Workers" template, and `CLOUDFLARE_ACCOUNT_ID`. Without a relay to talk to — opened from a file,
+or served from anywhere else — the page notices and says so, and Host and Join tell you network
+play is unavailable instead of hanging.
 
 ---
 
@@ -410,15 +442,17 @@ To regenerate the screenshots in this README from the real interface:
 ```
 src/
   Main.java              application entry point, window and display handling
-  ai/                    the five difficulty levels and the shot selection behind them
+  ai/                    the six difficulty levels and the shot selection behind them
   audio/                 music and sound effect playback
   game/                  board, ships, placement rules, attack results — no JavaFX in here
   network/               LAN discovery by join code, and the game session over TCP
-  settings/              video and audio preferences, saved between sessions
+  settings/              preferences, statistics and the achievements, saved between sessions
   ui/                    the screens, and the shared widgets they are built from
-test/                    JUnit tests for the board rules and the AI
+test/                    JUnit tests for the board rules, the AI and the fleet-shape reading
 resources/               images, audio, and theme.css
 packaging/               application icons for each platform
+battleship.html          the whole game as one page, for a browser
+worker/                  the Cloudflare Worker that serves it and relays network games
 ```
 
 Two boundaries are worth knowing about if you plan to change anything. The `game` package has no

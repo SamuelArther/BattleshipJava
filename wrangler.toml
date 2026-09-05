@@ -1,0 +1,22 @@
+# The web app on Cloudflare.
+#
+# public/index.html is not in the repository: it is battleship.html, copied into place by the
+# deploy workflow, so there is only ever one copy of the game to keep up to date.
+
+name = "battleship"
+main = "worker/index.js"
+compatibility_date = "2025-09-01"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# One room per join code. It keeps nothing between connections, so the SQLite backend is here
+# because free-plan Durable Objects require it rather than because anything is stored.
+[[durable_objects.bindings]]
+name = "GAME_ROOM"
+class_name = "GameRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GameRoom"]
