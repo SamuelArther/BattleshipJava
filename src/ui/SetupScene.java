@@ -26,6 +26,7 @@ import javafx.scene.text.FontWeight;
 import network.LanDiscovery;
 import network.NetworkGameSession;
 import network.NetworkMessageListener;
+import settings.Achievements;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
@@ -326,6 +327,7 @@ public class SetupScene implements NetworkMessageListener {
         if (gameMode == GameMode.HOST) {
             networkSession = new NetworkGameSession(this);
             networkSession.host(NetworkGameSession.DEFAULT_PORT);
+            Achievements.get().gameHosted();
             if (codeDisplayLabel != null) {
                 codeDisplayLabel.setText(networkSession.getJoinCode());
             }
@@ -344,6 +346,7 @@ public class SetupScene implements NetworkMessageListener {
         networkSession = new NetworkGameSession(this);
         connectButton.setDisable(true);
         networkSession.joinWithCode(code);
+        Achievements.get().gameJoined();
     }
 
     /**
@@ -407,6 +410,7 @@ public class SetupScene implements NetworkMessageListener {
             return;
         }
         board.randomize(random);
+        Achievements.get().boardRandomized();
         updateBoardButtons();
         updateShipButtons();
         selectNextAvailableShip();
@@ -418,6 +422,7 @@ public class SetupScene implements NetworkMessageListener {
             return;
         }
         board.clear();
+        Achievements.get().boardCleared();
         selectedShip = ShipType.CARRIER;
         updateBoardButtons();
         updateShipButtons();

@@ -161,18 +161,36 @@ public class StatsScene {
         table.add(label, column, row);
     }
 
+    /**
+     * A hundred and twenty-five of them, so they are grouped.
+     *
+     * A flat list that long tells you nothing at a glance. Split into its categories, each with
+     * its own tally, it shows you where you are strong and which corner of the game you have
+     * never been into.
+     */
     private VBox buildAchievements() {
         Achievements achievements = Achievements.get();
         int total = Achievements.Achievement.values().length;
 
         VBox list = new VBox(6);
-        for (Achievements.Achievement achievement : Achievements.Achievement.values()) {
-            boolean unlocked = achievements.isUnlocked(achievement);
-            Label label = new Label((unlocked ? "✓  " : "—  ")
-                + achievement.getDisplayName() + " — " + achievement.getDescription());
-            label.getStyleClass().add(unlocked ? "achievement-done" : "achievement-locked");
-            label.setWrapText(true);
-            list.getChildren().add(label);
+        for (Achievements.Category category : Achievements.Category.values()) {
+            Label categoryLabel = new Label(category.getDisplayName()
+                + "  (" + achievements.unlockedCount(category) + " of " + Achievements.totalIn(category) + ")");
+            categoryLabel.getStyleClass().add("terms-part");
+            VBox.setMargin(categoryLabel, new Insets(category == Achievements.Category.values()[0] ? 0 : 12, 0, 2, 0));
+            list.getChildren().add(categoryLabel);
+
+            for (Achievements.Achievement achievement : Achievements.Achievement.values()) {
+                if (achievement.getCategory() != category) {
+                    continue;
+                }
+                boolean unlocked = achievements.isUnlocked(achievement);
+                Label label = new Label((unlocked ? "✓  " : "—  ")
+                    + achievement.getDisplayName() + " — " + achievement.getDescription());
+                label.getStyleClass().add(unlocked ? "achievement-done" : "achievement-locked");
+                label.setWrapText(true);
+                list.getChildren().add(label);
+            }
         }
 
         Label heading = UiFactory.createSectionTitle(
@@ -196,6 +214,7 @@ public class StatsScene {
                 reset.setText("Press again to erase");
                 return;
             }
+            Achievements.get().statisticsErased();
             statistics.reset();
             backAction.run();
         });
