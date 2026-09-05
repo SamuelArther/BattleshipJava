@@ -1,0 +1,38 @@
+name: Deploy the web app
+
+# Puts battleship.html on Cloudflare, along with the small Worker that lets two players find
+# each other. Runs when the page or the Worker changes, and can be run by hand from the
+# Actions tab.
+#
+# Needs two repository secrets:
+#   CLOUDFLARE_API_TOKEN   an API token with the "Edit Cloudflare Workers" template
+#   CLOUDFLARE_ACCOUNT_ID  the account ID from the Workers dashboard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'battleship.html'
+      - 'worker/**'
+      - 'wrangler.toml'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Cloudflare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Put the game where the Worker serves it from
+        run: |
+          mkdir -p public
+          cp battleship.html public/index.html
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
