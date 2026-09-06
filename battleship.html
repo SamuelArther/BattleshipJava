@@ -168,7 +168,10 @@ body {
 .root-pane {
   min-height: 100vh;
   min-height: 100dvh;
-  padding: 18px;
+  /* viewport-fit=cover lets the page draw under the notch and the home indicator,
+     so every edge has to be padded back out to the safe area. */
+  padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right))
+           max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -671,7 +674,11 @@ body[data-skin="macos"] .achievement-unlocked { color: #007aff; }
 /* Phone */
 
 @media (max-width: 900px) {
-  .root-pane { padding: 10px; align-items: flex-start; }
+  .root-pane {
+    padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+             max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    align-items: flex-start;
+  }
   .stack-on-phone { flex-direction: column !important; align-items: center !important; }
   .screen-title { font-size: 34px; }
   .board-wrap { padding: 4px; }
@@ -680,13 +687,28 @@ body[data-skin="macos"] .achievement-unlocked { color: #007aff; }
   .menu-button, .primary-button, .danger-button { min-height: 44px; }
   .phone-wide { width: 100%; max-width: 340px; }
 }
+
+/* Below about 430px a 28px tile no longer fits, so the tile follows the viewport
+   instead of stepping at fixed widths. The board costs, either side of the ten
+   tiles: 9 gaps, the side axis and its 6px gutter, the wrap and frame padding,
+   the frame border and the root padding — 70px in total, and the axis is itself
+   0.62 of a tile, which is where the 10.62 divisor comes from. min() keeps the
+   tile at 28px on anything wide enough, so desktop is untouched. */
+@media (max-width: 900px) {
+  :root {
+    --tile: max(18px, min(28px, calc((100vw - 70px) / 10.62)));
+    --axis: calc(var(--tile) * 0.62);
+  }
+}
 @media (max-width: 420px) {
-  :root { --tile: 27px; --axis: 15px; }
   .axis-label { font-size: 10px; }
   .section-title { font-size: 18px; }
 }
-@media (max-width: 360px) {
-  :root { --tile: 24px; --axis: 13px; }
+
+/* A landscape phone is short but wide enough to sit the two boards side by side,
+   which beats scrolling a stacked pair through a 390px-tall window. */
+@media (max-width: 900px) and (min-width: 700px) and (orientation: landscape) {
+  .stack-on-phone { flex-direction: row !important; align-items: flex-start !important; }
 }
 </style>
 </head>
@@ -4277,7 +4299,9 @@ else showMainMenu();
 @media (max-width: 900px) {
   .battle-top {
     position: sticky;
-    top: 0;
+    /* Sticky offsets are measured from the viewport, which under viewport-fit=cover
+       starts behind the notch, so the status line has to clear it itself. */
+    top: env(safe-area-inset-top);
     z-index: 20;
     padding: 8px 0 10px !important;
     background: linear-gradient(to bottom, var(--ink-deep) 70%, transparent);
